@@ -50,7 +50,7 @@ async function updateList(patientId: string, fn: (l: ClinicianQuestion[]) => Cli
   const { data, error } = await supabase.from("patients").select("state").eq("id", patientId).single();
   if (error) throw error;
   const state = data.state as unknown as { patient: Record<string, unknown> };
-  const list = (state.patient.clinicianQuestions as ClinicianQuestion[] | undefined) ?? [];
+  const list = (state.patient["clinicianQuestions"] as ClinicianQuestion[] | undefined) ?? [];
   const next = { ...state, patient: { ...state.patient, clinicianQuestions: fn(list) } };
   const { error: saveError } = await supabase.from("patients").update({ state: next as unknown as Json }).eq("id", patientId);
   if (saveError) throw saveError;
