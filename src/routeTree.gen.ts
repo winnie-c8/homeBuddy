@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedFamilyRouteImport } from './routes/_authenticated/family'
 import { Route as AuthenticatedSeniorRouteImport } from './routes/_authenticated/senior'
+import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
 import { Route as AuthenticatedCareIndexRouteImport } from './routes/_authenticated/care.index'
 import { Route as AuthenticatedCarePatientIdRouteImport } from './routes/_authenticated/care.$patientId'
 
@@ -47,6 +48,11 @@ const AuthenticatedSeniorRoute = AuthenticatedSeniorRouteImport.update({
   path: '/senior',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedWelcomeRoute = AuthenticatedWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCareIndexRoute = AuthenticatedCareIndexRouteImport.update({
   id: '/care/',
   path: '/care/',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/family': typeof AuthenticatedFamilyRoute
   '/senior': typeof AuthenticatedSeniorRoute
+  '/welcome': typeof AuthenticatedWelcomeRoute
   '/care/$patientId': typeof AuthenticatedCarePatientIdRoute
   '/care/': typeof AuthenticatedCareIndexRoute
 }
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/family': typeof AuthenticatedFamilyRoute
   '/senior': typeof AuthenticatedSeniorRoute
+  '/welcome': typeof AuthenticatedWelcomeRoute
   '/care/$patientId': typeof AuthenticatedCarePatientIdRoute
   '/care': typeof AuthenticatedCareIndexRoute
 }
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/family': typeof AuthenticatedFamilyRoute
   '/_authenticated/senior': typeof AuthenticatedSeniorRoute
+  '/_authenticated/welcome': typeof AuthenticatedWelcomeRoute
   '/_authenticated/care/$patientId': typeof AuthenticatedCarePatientIdRoute
   '/_authenticated/care/': typeof AuthenticatedCareIndexRoute
 }
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/family'
     | '/senior'
+    | '/welcome'
     | '/care/$patientId'
     | '/care/'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/family'
     | '/senior'
+    | '/welcome'
     | '/care/$patientId'
     | '/care'
   id:
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/family'
     | '/_authenticated/senior'
+    | '/_authenticated/welcome'
     | '/_authenticated/care/$patientId'
     | '/_authenticated/care/'
   fileRoutesById: FileRoutesById
@@ -170,6 +182,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSeniorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/welcome': {
+      id: '/_authenticated/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof AuthenticatedWelcomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/care/': {
       id: '/_authenticated/care/'
       path: '/care'
@@ -190,6 +209,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedFamilyRoute: typeof AuthenticatedFamilyRoute
   AuthenticatedSeniorRoute: typeof AuthenticatedSeniorRoute
+  AuthenticatedWelcomeRoute: typeof AuthenticatedWelcomeRoute
   AuthenticatedCarePatientIdRoute: typeof AuthenticatedCarePatientIdRoute
   AuthenticatedCareIndexRoute: typeof AuthenticatedCareIndexRoute
 }
@@ -197,6 +217,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFamilyRoute: AuthenticatedFamilyRoute,
   AuthenticatedSeniorRoute: AuthenticatedSeniorRoute,
+  AuthenticatedWelcomeRoute: AuthenticatedWelcomeRoute,
   AuthenticatedCarePatientIdRoute: AuthenticatedCarePatientIdRoute,
   AuthenticatedCareIndexRoute: AuthenticatedCareIndexRoute,
 }

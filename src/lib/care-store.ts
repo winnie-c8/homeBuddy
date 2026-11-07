@@ -1,105 +1,138 @@
-import { useSyncExternalStore } from "react";
-import { alertsForCheckIn, createSampleState, type CareState, type CheckIn } from "./care";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import { alertsForCheckIn, type Alert, type CareState, type CheckIn, type Patient, type Question } from "./care";
 
-// Demo store kept in the browser until real accounts and saved data are added.
-const KEY = "hearthline-demo-v1";
+/** What one senior's record holds in the database (patients.state). */
+export type PatientBlob = { patient: Omit<Patient, "id">; questions: Question[]; alerts: Alert[] };
+export type PatientRow = { id: string; senior_user_id: string; invite_code: string; state: PatientBlob };
+
 let state: CareState | null = null;
+let rows: PatientRow[] = [];
+let loading: Promise<void> | null = null;
 const listeners = new Set<() => void>();
-
-function load(): CareState {
-  if (state) return state;
-  try {
-    const raw = localStorage.getItem(KEY);
-    state = raw ? (JSON.parse(raw) as CareState) : createSampleState();
-  } catch {
-    state = createSampleState();
-  }
-  return state;
-}
-
-function set(updater: (s: CareState) => CareState) {
-  state = updater(load());
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    /* storage full or blocked */
-  }
-  listeners.forEach((l) => l());
-}
-
+const emit = () => listeners.forEach((l) => l());
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+function toState(list: PatientRow[]): CareState {
+  return {
+    patients: list.map((r) => ({ ...r.state.patient, id: r.id })),
+    questions: list.flatMap((r) => (r.state.questions ?? []).map((q) => ({ ...q, patientId: r.id }))),
+    alerts: list.flatMap((r) => (r.state.alerts ?? []).map((a) => ({ ...a, patientId: r.id }))),
+  };
+}
+
+export async function refreshCare() {
+  const { data, error } = await supabase.from("patients").select("id, senior_user_id, invite_code, state");
+  if (error) throw error;
+  rows = (data ?? []) as unknown as PatientRow[];
+  state = toState(rows);
+  emit();
+}
+
+export function patientRows() {
+  return rows;
+}
+
+/** Read the latest copy, apply the change, and save it — keeps concurrent edits from clobbering each other as much as possible. */
+async function update(patientId: string, fn: (b: PatientBlob) => PatientBlob) {
+  const { data, error } = await supabase.from("patients").select("state").eq("id", patientId).single();
+  if (error) throw error;
+  const next = fn(data.state as unknown as PatientBlob);
+  const { error: saveError } = await supabase.from("patients").update({ state: next as unknown as Json }).eq("id", patientId);
+  if (saveError) throw saveError;
+  await refreshCare();
+}
+
 export function useCare(): CareState | null {
+  useEffect(() => {
+    if (!loading) loading = refreshCare().catch(() => {
+      loading = null;
+    });
+  }, []);
   return useSyncExternalStore(
     (l) => {
       listeners.add(l);
       return () => listeners.delete(l);
     },
-    () => load(),
+    () => state,
     () => null,
   );
 }
 
+/** Forget cached records (on sign-out). */
+export function clearCare() {
+  state = null;
+  rows = [];
+  loading = null;
+  emit();
+}
+
+export function newPatientBlob(input: { name: string; preferredName: string; age: number; city: string; callTime: string }): PatientBlob {
+  return {
+    patient: { ...input, conditions: [], meds: [], planItems: [], planChanges: [], contacts: [], sharedWith: [], checkIns: [] },
+    questions: [],
+    alerts: [],
+  };
+}
+
+export async function createMyPatient(userId: string, blob: PatientBlob) {
+  const { error } = await supabase.from("patients").insert({ senior_user_id: userId, state: blob as unknown as Json });
+  if (error) throw error;
+  await refreshCare();
+}
+
+export async function joinPatient(code: string, relation: string) {
+  const { error } = await supabase.rpc("join_patient", { _code: code, _relation: relation });
+  if (error) throw error;
+  await refreshCare();
+}
+
 export const care = {
-  reset() {
-    set(() => createSampleState());
-  },
-  addCheckIn(patientId: string, c: Omit<CheckIn, "id">, newQuestions: string[]) {
-    set((s) => {
+  async addCheckIn(patientId: string, c: Omit<CheckIn, "id">, newQuestions: string[]) {
+    await update(patientId, (b) => {
       const now = new Date().toISOString();
       const checkIn: CheckIn = { ...c, id: uid() };
-      const patients = s.patients.map((p) =>
-        p.id !== patientId
-          ? p
-          : {
-              ...p,
-              checkIns: [...p.checkIns, checkIn],
-              planChanges: c.answered ? p.planChanges.map((x) => (x.deliveredAt ? x : { ...x, deliveredAt: now })) : p.planChanges,
-            },
-      );
-      const patient = patients.find((p) => p.id === patientId)!;
-      const alerts = alertsForCheckIn(patient, checkIn).map((a) => ({ ...a, id: uid() }));
-      const questions = s.questions.map((q) =>
-        c.answered && q.patientId === patientId && q.answer && !q.deliveredAt ? { ...q, deliveredAt: now } : q,
-      );
+      const patient = {
+        ...b.patient,
+        checkIns: [...b.patient.checkIns, checkIn],
+        planChanges: c.answered ? b.patient.planChanges.map((x) => (x.deliveredAt ? x : { ...x, deliveredAt: now })) : b.patient.planChanges,
+      };
+      const alerts = alertsForCheckIn({ ...patient, id: patientId }, checkIn).map((a) => ({ ...a, id: uid() }));
+      const questions = b.questions.map((q) => (c.answered && q.answer && !q.deliveredAt ? { ...q, deliveredAt: now } : q));
       for (const text of newQuestions) questions.push({ id: uid(), patientId, text, askedAt: now });
-      return { patients, questions, alerts: [...alerts, ...s.alerts] };
+      return { patient, questions, alerts: [...alerts, ...b.alerts] };
     });
   },
-  raiseAlert(patientId: string, message: string) {
-    set((s) => {
-      const p = s.patients.find((x) => x.id === patientId)!;
+  async raiseAlert(patientId: string, message: string) {
+    await update(patientId, (b) => {
+      const p = b.patient;
       const notified = p.contacts.filter((x) => x.kind === "care" || p.sharedWith.includes(x.id)).map((x) => x.name);
-      return { ...s, alerts: [{ id: uid(), patientId, at: new Date().toISOString(), level: "urgent", message, notified }, ...s.alerts] };
+      return { ...b, alerts: [{ id: uid(), patientId, at: new Date().toISOString(), level: "urgent", message, notified }, ...b.alerts] };
     });
   },
-  acknowledgeAlert(id: string) {
-    set((s) => ({ ...s, alerts: s.alerts.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)) }));
+  async acknowledgeAlert(patientId: string, id: string) {
+    await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)) }));
   },
-  answerQuestion(id: string, answer: string, by: string) {
-    set((s) => ({
-      ...s,
-      questions: s.questions.map((q) => (q.id === id ? { ...q, answer, answeredBy: by, answeredAt: new Date().toISOString() } : q)),
+  async answerQuestion(patientId: string, id: string, answer: string, by: string) {
+    await update(patientId, (b) => ({
+      ...b,
+      questions: b.questions.map((q) => (q.id === id ? { ...q, answer, answeredBy: by, answeredAt: new Date().toISOString() } : q)),
     }));
   },
-  addPlanChange(patientId: string, text: string, planItems: string[]) {
-    set((s) => ({
-      ...s,
-      patients: s.patients.map((p) =>
-        p.id === patientId
-          ? { ...p, planItems, planChanges: [...p.planChanges, { id: uid(), text, createdAt: new Date().toISOString() }] }
-          : p,
-      ),
+  async addPlanChange(patientId: string, text: string, planItems: string[]) {
+    await update(patientId, (b) => ({
+      ...b,
+      patient: { ...b.patient, planItems, planChanges: [...b.patient.planChanges, { id: uid(), text, createdAt: new Date().toISOString() }] },
     }));
   },
-  setShared(patientId: string, contactId: string, shared: boolean) {
-    set((s) => ({
-      ...s,
-      patients: s.patients.map((p) =>
-        p.id === patientId
-          ? { ...p, sharedWith: shared ? [...new Set([...p.sharedWith, contactId])] : p.sharedWith.filter((x) => x !== contactId) }
-          : p,
-      ),
+  async setShared(patientId: string, contactId: string, shared: boolean) {
+    await update(patientId, (b) => ({
+      ...b,
+      patient: {
+        ...b.patient,
+        sharedWith: shared ? [...new Set([...b.patient.sharedWith, contactId])] : b.patient.sharedWith.filter((x) => x !== contactId),
+      },
     }));
   },
 };

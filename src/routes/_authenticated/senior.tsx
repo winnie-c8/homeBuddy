@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Loading } from "@/components/status-badge";
 import { useLiveVoice, type LiveEvent } from "@/hooks/use-live-voice";
-import { care, useCare } from "@/lib/care-store";
+import { care, patientRows, useCare } from "@/lib/care-store";
+import { SeniorSetup } from "@/components/senior-setup";
 import { callContext, detectUrgent } from "@/lib/care";
 import { summarizeCheckIn, type CheckInSummary } from "@/lib/checkin.functions";
 
@@ -27,16 +28,19 @@ export const Route = createFileRoute("/_authenticated/senior")({
   component: SeniorPage,
 });
 
-const PATIENT_ID = "margaret";
 type Row = { role: "user" | "assistant"; text: string };
 
 function SeniorPage() {
   const state = useCare();
+  const { account } = Route.useRouteContext();
+  const PATIENT_ID = state?.patients.find((p) => patientRows().some((r) => r.id === p.id && r.senior_user_id === account.id))?.id ?? "";
+  const inviteCode = patientRows().find((r) => r.id === PATIENT_ID)?.invite_code;
   const [rows, setRows] = useState<Row[]>([]);
   const [phase, setPhase] = useState<"ready" | "saving" | "done">("ready");
   const [result, setResult] = useState<CheckInSummary | null>(null);
   const rowsRef = useRef<Row[]>([]);
   const alerted = useRef(new Set<string>());
+  const lastSummary = useRef<CheckInSummary | null>(null);
   const summarize = useServerFn(summarizeCheckIn);
 
   const onEvent = (e: LiveEvent) => {
@@ -54,7 +58,7 @@ function SeniorPage() {
       const words = detectUrgent(next[next.length - 1]?.text ?? "").filter((w) => !alerted.current.has(w));
       if (words.length) {
         words.forEach((w) => alerted.current.add(w));
-        care.raiseAlert(PATIENT_ID, `During today's call Margaret said: "${words.join('", "')}". Please check on her.`);
+        void care.raiseAlert(PATIENT_ID, `During today's call ${account.displayName} said: "${words.join('", "')}". Please check on her.`);
         toast.error("Your family and care team have been alerted.");
       }
     }
@@ -72,8 +76,9 @@ function SeniorPage() {
     setPhase("saving");
     summarize({ data: { transcript, meds: patient.meds.map((m) => m.name) } })
       .then((s) => {
+        lastSummary.current = s;
         const urgent = [...new Set([...s.urgent, ...alerted.current])];
-        care.addCheckIn(
+        return care.addCheckIn(
           PATIENT_ID,
           {
             date: new Date().toISOString(),
@@ -91,7 +96,8 @@ function SeniorPage() {
           },
           s.questions,
         );
-        setResult(s);
+      }).then(() => {
+        setResult(lastSummary.current);
         setPhase("done");
       })
       .catch(() => {
@@ -101,7 +107,8 @@ function SeniorPage() {
   }, [voice.status, voice.hasConnected, phase, state, summarize]);
 
   if (!state) return <Loading />;
-  const patient = state.patients.find((p) => p.id === PATIENT_ID)!;
+  const patient = state.patients.find((p) => p.id === PATIENT_ID);
+  if (!patient) return <SeniorSetup userId={account.id} defaultName={account.displayName} />;
 
   const begin = () => {
     rowsRef.current = [];
@@ -220,6 +227,12 @@ function SeniorPage() {
           <ShieldCheck className="size-7 text-primary" /> Who can see my information
         </h2>
         <p className="mt-2 text-lg text-muted-foreground">You choose. You can change this any time.</p>
+        {inviteCode && (
+          <p className="mt-4 rounded-2xl bg-secondary p-4 text-lg">
+            To connect family or your care team, give them this code: <span className="font-mono text-2xl font-bold tracking-widest">{inviteCode}</span>
+          </p>
+        )}
+        {patient.contacts.length === 0 && <p className="mt-4 text-lg text-muted-foreground">No one is connected yet.</p>}
         <ul className="mt-6 divide-y divide-border">
           {patient.contacts.map((c) => (
             <li key={c.id} className="flex items-center justify-between gap-4 py-4">
@@ -230,7 +243,7 @@ function SeniorPage() {
               <Switch
                 className="scale-150"
                 checked={patient.sharedWith.includes(c.id)}
-                onCheckedChange={(v) => care.setShared(patient.id, c.id, v)}
+                onCheckedChange={(v) => void care.setShared(patient.id, c.id, v)}
                 aria-label={`Share with ${c.name}`}
               />
             </li>

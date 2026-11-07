@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ArrowLeft, Phone, Plus, Send, Trash2, AlertTriangle } from "lucide-react";
@@ -26,7 +26,6 @@ export const Route = createFileRoute("/_authenticated/care/$patientId")({
   component: PatientPage,
 });
 
-const DOCTOR = "Dr. Anjali Patel";
 
 function PatientPage() {
   const { patientId } = Route.useParams();
@@ -139,8 +138,9 @@ function Trend({ title, data, pick, domain, color }: { title: string; data: Chec
   );
 }
 
-function QuestionItem({ q }: { q: { id: string; text: string; askedAt: string; answer?: string; answeredBy?: string; deliveredAt?: string } }) {
+function QuestionItem({ q }: { q: { id: string; patientId: string; text: string; askedAt: string; answer?: string; answeredBy?: string; deliveredAt?: string } }) {
   const [text, setText] = useState("");
+  const { account } = useRouteContext({ from: "/_authenticated" });
   return (
     <div className="rounded-2xl bg-muted p-4">
       <p className="font-bold">"{q.text}"</p>
@@ -155,7 +155,7 @@ function QuestionItem({ q }: { q: { id: string; text: string; askedAt: string; a
           className="mt-3 flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            if (text.trim()) care.answerQuestion(q.id, text.trim(), DOCTOR);
+            if (text.trim()) void care.answerQuestion(q.patientId, q.id, text.trim(), account.displayName);
           }}
         >
           <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write an answer in plain language" className="bg-card" />
@@ -193,7 +193,7 @@ function PlanEditor({ p }: { p: Patient }) {
         className="mt-3"
         disabled={!dirty && !note.trim()}
         onClick={() => {
-          care.addPlanChange(p.id, note.trim() || "The care plan was updated.", items);
+          void care.addPlanChange(p.id, note.trim() || "The care plan was updated.", items);
           setNote("");
         }}
       >

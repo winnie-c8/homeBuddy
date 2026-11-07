@@ -10,6 +10,9 @@ describe("role routing", () => {
     expect(roleHome("family")).toBe("/family");
     expect(roleHome("care_team")).toBe("/care");
   });
+  it("sends Google/phone users without an account type to choose one", () => {
+    expect(roleHome(null)).toBe("/welcome");
+  });
   it("blocks a family member from the care team dashboard", () => {
     expect(() => requireRole(acct("family"), "care_team")).toThrow();
   });
