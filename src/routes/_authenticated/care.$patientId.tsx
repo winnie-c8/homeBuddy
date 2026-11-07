@@ -363,11 +363,8 @@ function AskRosie({ p }: { p: Patient }) {
                   : q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
                 {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Immediate attention right away" : q.redAfter ? `Immediate attention after ${q.redAfter} days in a row` : "Never immediate attention"}`}
               </p>
-              {q.answer ? (
-                <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Waiting: Rosie will ask on the next call</p>
-              )}
+              {/* Answers live in this question's Graph / Table card above. */}
+              {!q.answer && <p className="mt-2 text-sm text-muted-foreground">Waiting: Rosie will ask on the next call</p>}
             </div>
             {(everyDaysOf(q) >= 1 || !q.answer) && (
               <Button size="icon" variant="ghost" aria-label="Remove question" onClick={() => void clinicianQuestions.remove(p.id, q.id)}><Trash2 /></Button>
