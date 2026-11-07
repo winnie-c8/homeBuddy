@@ -143,6 +143,7 @@
   --chart-4: oklch(0.75 0.15 80);
   --chart-5: oklch(0.55 0.1 300);
   --gradient-hearth: radial-gradient(120% 80% at 50% 0%, oklch(0.94 0.04 75) 0%, var(--background) 60%);
+  --gradient-sky: linear-gradient(to bottom, var(--sky-1) 0%, var(--sky-2) 45%, var(--sky-bright) 100%);
   --shadow-soft: 0 1px 2px oklch(0.3 0.03 160 / 6%), 0 12px 32px -12px oklch(0.3 0.03 160 / 18%);
   --shadow-glow: 0 0 0 12px oklch(0.42 0.075 165 / 12%), 0 0 0 28px oklch(0.42 0.075 165 / 6%);
   --sidebar: oklch(0.96 0.015 85);
