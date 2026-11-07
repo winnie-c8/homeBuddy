@@ -1,11 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const GEMINI_TEXT_MODEL = "gemini-flash-latest";
+// Tried in order. gemini-flash-lite-latest answers in ~1s; gemini-flash-latest has been
+// hanging until timeout, so it is only a last resort. gemini-2.5-flash-lite is gone for
+// new accounts (404) and was dropped.
+const GEMINI_TEXT_MODELS = ["gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-flash-latest"];
+const RETRYABLE = new Set([429, 500, 503, 504]);
+const MODEL_TIMEOUT_MS = 10000;
 
 const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
   meds: z.array(z.string().max(120)).max(30),
+  name: z.string().max(120).optional(),
 });
 
 export type CheckInSummary = {
@@ -51,37 +57,52 @@ const schema = {
 export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSummary> {
     const key = process.env["GEMINI_API_KEY"];
     if (!key) throw new Error("GEMINI_API_KEY is not set");
-    const text = data.transcript.map((t) => `${t.role === "user" ? "Senior" : "Companion"}: ${t.text}`).join("\n");
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT_MODEL}:generateContent`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
+    const text = data.transcript.map((t) => `${t.role === "user" ? data.name || "Senior" : "Rosie"}: ${t.text}`).join("\n");
+    const payload = JSON.stringify({
         systemInstruction: {
           parts: [
             {
               text:
                 "Extract a daily check-in record from a phone call between an AI companion and an older adult. " +
                 "Only record what the senior actually said; use 'unclear' or null when not discussed. " +
-                "List every expected medication. Do not add medical advice.",
+                "List every expected medication. Do not add medical advice. " +
+                "Write the summary about the senior by name (e.g. 'Margaret slept well...'), never 'the senior' or 'the patient'.",
             },
           ],
         },
         contents: [
           {
             role: "user",
-            parts: [{ text: `Expected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
+            parts: [{ text: `Senior's name: ${data.name || "unknown"}\nExpected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
           },
         ],
         generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema },
-      }),
-    });
-    if (!res.ok) {
-      console.error("Gemini summary failed", res.status, (await res.text()).slice(0, 500));
-      throw new Error("Summary service failed");
+      });
+    for (const model of GEMINI_TEXT_MODELS) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: payload,
+        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
+      }).catch((e: unknown) => {
+        console.error("Gemini summary network error", model, e);
+        return null;
+      });
+      if (!res) continue;
+      if (!res.ok) {
+        console.error("Gemini summary failed", model, res.status, (await res.text()).slice(0, 300));
+        if (RETRYABLE.has(res.status) || res.status === 404) continue;
+        throw new Error("Summary service failed");
+      }
+      const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const out = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
+      try {
+        return JSON.parse(out) as CheckInSummary;
+      } catch {
+        console.error("Gemini summary bad JSON", model);
+      }
     }
-    const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    const out = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
-    return JSON.parse(out) as CheckInSummary;
+    throw new Error("Summary service failed");
 }
 
 export const summarizeCheckIn = createServerFn({ method: "POST" })

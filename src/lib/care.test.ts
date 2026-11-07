@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsForCheckIn, checkInStatus, createSampleState, type CheckIn } from "./care";
+import { alertsForCheckIn, detectUrgent, checkInStatus, createSampleState, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -29,5 +29,33 @@ describe("alerts", () => {
   it("raises a warning for a missed dose", () => {
     const a = alertsForCheckIn(p, { ...ok, meds: [{ name: "Metformin", taken: "no" }] })[0]!;
     expect(a.level).toBe("warning");
+  });
+});
+
+describe("detectUrgent whole words", () => {
+  it("does not flag 'fellow' as a fall", () => {
+    expect(detectUrgent("I'm a fellow being")).toEqual([]);
+  });
+  it("still flags 'I fell'", () => {
+    expect(detectUrgent("I fell this morning")).toEqual(["fell"]);
+  });
+});
+
+import { callContext as _ctx, followUps as _fu, greetingFor as _greet, createSampleState as _seed } from "./care";
+
+describe("daily call context", () => {
+  it("greets by local time of day", () => {
+    expect(_greet(new Date(2026, 0, 1, 9))).toBe("Good morning");
+    expect(_greet(new Date(2026, 0, 1, 14))).toBe("Good afternoon");
+    expect(_greet(new Date(2026, 0, 1, 19))).toBe("Good evening");
+  });
+  it("follows up on yesterday's headache", () => {
+    const now = new Date(2026, 0, 2, 10);
+    const p = { ..._seed().patients[0], checkIns: [] as never[] } as ReturnType<typeof _seed>["patients"][0];
+    p.checkIns = [{ id: "x", date: new Date(2026, 0, 1, 10).toISOString(), answered: true, meds: [], meals: 2, fluids: "good",
+      sleepHours: 7, mood: 4, pain: 5, fall: false, urgent: [], summary: "My head hurts.", source: "voice" }];
+    expect(_fu(p, now)[0]).toMatch(/^Yesterday: pain 5\/10/);
+    expect(_ctx(p, [], now)).toContain("My head hurts.");
+    expect(_ctx(p, [], now)).toContain("Good morning");
   });
 });
