@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { getAccount, roleHome, type AppRole } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-type Search = { redirect?: string | undefined };
+type Search = { redirect?: string | undefined; role?: AppRole | undefined };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): Search => ({
     redirect: typeof s["redirect"] === "string" && s["redirect"].startsWith("/") && !s["redirect"].startsWith("//") ? s["redirect"] : undefined,
+    role: s["role"] === "senior" || s["role"] === "family" || s["role"] === "care_team" ? s["role"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -35,10 +36,11 @@ const ROLES = [
 ] as const;
 
 function AuthPage() {
-  const { redirect } = Route.useSearch();
+  const { redirect, role: chosenRole } = Route.useSearch();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
-  const [role, setRole] = useState<AppRole>("senior");
+  const [role, setRole] = useState<AppRole>(chosenRole ?? "senior");
+  useEffect(() => { if (chosenRole) setRole(chosenRole); }, [chosenRole]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -141,6 +143,13 @@ function AuthPage() {
     <main className="mx-auto max-w-md px-5 pb-24 pt-12">
       <h1 className="text-4xl font-semibold text-foreground">
         {mode === "signup" ? "Create your account" : mode === "forgot" ? "Reset password" : "Welcome back"}
+      </h1>
+      {chosenRole && (
+        <p className="mt-1 text-xl font-bold text-primary">
+          {chosenRole === "senior" ? "Patient" : chosenRole === "family" ? "Family" : "Care team"} {mode === "signup" ? "sign up" : "sign in"}
+        </p>
+      )}
+      <h1 className="sr-only">
       </h1>
       <p className="mt-2 text-lg text-muted-foreground">
         {mode === "signup" ? "Tell us who you are so we show the right page." : "Sign in to homeBuddy."}
