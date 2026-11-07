@@ -64,10 +64,15 @@ function PatientPage() {
           {clinicianQuestionsOf(p).map((q) => (
             <QuestionGraph key={q.id} p={p} q={q} />
           ))}
+          {/* Short calls only ask the doctor's questions, so the built-in charts would be empty. */}
+          {!p.shortCall && (
+            <>
           <Trend title="Medication adherence (%)" data={checkIns} pick={(c) => (c.answered && c.meds.length ? Math.round((c.meds.filter((m) => m.taken === "yes").length / c.meds.length) * 100) : null)} domain={[0, 100]} color="var(--chart-1)" />
           <Trend title="Mood (1–5)" data={checkIns} pick={(c) => c.mood} domain={[1, 5]} color="var(--chart-2)" />
           <Trend title="Sleep (hours)" data={checkIns} pick={(c) => c.sleepHours} domain={[0, 10]} color="var(--chart-3)" />
           <Trend title="Appetite (meals/day)" data={checkIns} pick={(c) => (c.answered ? c.meals : null)} domain={[0, 3]} color="var(--chart-4)" />
+            </>
+          )}
         </div>
       </Panel>
 
