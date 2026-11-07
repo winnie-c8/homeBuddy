@@ -5,6 +5,9 @@ import { BellRing, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import swirl from "@/assets/care-swirl.svg";
 import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, latestCheckIn, patientStatus, type Status } from "@/lib/care";
 
@@ -28,6 +31,7 @@ const order: Record<Status, number> = { red: 0, yellow: 1, green: 2 };
 function CareDashboard() {
   const state = useCare();
   const { account } = Route.useRouteContext();
+  const [addOpen, setAddOpen] = useState(false);
   if (!state) return <Loading />;
   const patients = [...state.patients].sort((a, b) => order[patientStatus(a)] - order[patientStatus(b)]);
   const counts = { red: 0, yellow: 0, green: 0 } as Record<Status, number>;
@@ -43,14 +47,7 @@ function CareDashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-clinic-bg">
-      <svg aria-hidden="true" viewBox="0 0 1440 1024" preserveAspectRatio="xMidYMid slice" className="pointer-events-none absolute inset-0 size-full" fill="none">
-        <g className="stroke-clinic-swirl" strokeWidth="38" strokeLinecap="round">
-          <path d="M-40 140 C 200 60, 420 80, 600 40 S 900 -20, 1000 30" />
-          <path d="M-60 360 C 120 260, 380 300, 300 420 S 40 520, 160 600 S 560 640, 760 560" />
-          <path d="M880 760 C 1040 640, 1260 680, 1500 600" />
-          <path d="M1120 1060 C 1180 900, 1360 860, 1480 900" />
-        </g>
-      </svg>
+      <img src={swirl} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full object-cover" />
       <main className="relative mx-auto max-w-6xl px-5 pb-24 pt-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -58,7 +55,20 @@ function CareDashboard() {
             <h1 className="text-6xl font-bold md:text-7xl">Your Patients</h1>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <a href="#add-patient" className="rounded-2xl bg-card px-4 py-2 text-xl shadow-[var(--shadow-soft)] hover:bg-muted">Add Patient</a>
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger asChild>
+                <button type="button" className="rounded-2xl bg-card px-4 py-2 text-xl shadow-[var(--shadow-soft)] hover:bg-muted">Add Patient</button>
+              </DialogTrigger>
+              <DialogContent className="rounded-none border-0 bg-clinic-bg p-0 shadow-[var(--shadow-soft)] sm:rounded-none">
+                <DialogTitle className="sr-only">Add a patient</DialogTitle>
+                <DialogDescription className="sr-only">Enter the patient's homeBuddy code.</DialogDescription>
+                <JoinPatientCard
+                  kind="care_team"
+                  onDone={() => setAddOpen(false)}
+                  className="space-y-4 bg-card p-8 [&_button[type=submit]]:h-12 [&_button[type=submit]]:rounded-2xl [&_button[type=submit]]:text-lg [&_h3]:text-4xl [&_h3]:font-bold [&_input]:h-12 [&_input]:rounded-none [&_input]:bg-clinic-bg [&_input]:text-lg [&_label]:text-lg [&_p]:italic"
+                />
+              </DialogContent>
+            </Dialog>
             <div className="flex items-center gap-5 rounded-2xl bg-card px-4 py-2 text-xl shadow-[var(--shadow-soft)]">
               {(["red", "yellow", "green"] as Status[]).map((s) => (
                 <span key={s} className="flex items-center gap-2">
@@ -71,7 +81,7 @@ function CareDashboard() {
 
         <section className="mt-12 grid gap-8 md:grid-cols-2">
           {patients.length === 0 && (
-            <p className="bg-card p-8 text-muted-foreground shadow-[var(--shadow-soft)] md:col-span-2">No patients yet. Ask a patient for their homeBuddy code and add them below.</p>
+            <p className="bg-card p-8 text-muted-foreground shadow-[var(--shadow-soft)] md:col-span-2">No patients yet. Ask a patient for their homeBuddy code and click Add Patient.</p>
           )}
           {patients.map((p) => {
             const last = latestCheckIn(p);
@@ -137,9 +147,6 @@ function CareDashboard() {
           </div>
         </section>
 
-        <section id="add-patient" className="mt-12 max-w-xl scroll-mt-24 [&_form]:rounded-none [&_form]:border-0 [&_form]:p-8 [&_form]:shadow-[var(--shadow-soft)] [&_h3]:text-3xl [&_h3]:font-bold">
-          <JoinPatientCard kind="care_team" />
-        </section>
       </main>
     </div>
   );
