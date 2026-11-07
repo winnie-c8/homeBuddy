@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+- Demo data lives in a browser-only store (`src/lib/care-store.ts`, localStorage) seeded from `src/lib/care.ts`; why: sample patients first, real accounts and Lovable Cloud come later.
+- Status (green/yellow/red) and alert routing rules live only in `src/lib/care.ts` with tests in `care.test.ts`; why: one source of truth for safety rules.
+- Voice calls use the persistent `/api/live` relay (`src/lib/live-relay.server.ts`, wired in `src/server.ts` and `live-vite-plugin.ts`); the browser sends patient context in `app.start`; why: Live sessions need an open control socket for the whole call.
+- Post-call transcripts are structured by `runSummary` in `src/lib/checkin.functions.ts`; why: keeps AI extraction server-side and testable.
