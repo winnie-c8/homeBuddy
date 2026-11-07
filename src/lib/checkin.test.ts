@@ -11,6 +11,7 @@ const SUMMARY: CheckInSummary = {
   fall: false,
   urgent: [],
   questions: [],
+  answers: [{ question: "Is your ankle swelling better?", said: "No, it's worse today", concern: true }],
   summary: "Margaret took her metformin and ate breakfast.",
 };
 
@@ -74,5 +75,27 @@ describe("runSummary model fallback", () => {
     vi.stubGlobal("fetch", vi.fn(async () => responseFor({}, false, 503)));
 
     await expect(runSummary(DATA)).rejects.toThrow("Summary service failed");
+  });
+});
+
+describe("care-team answers", () => {
+  it("returns each answer with the senior's words and a concern flag", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => okResponse()));
+    const result = await runSummary({ ...DATA, clinicianQuestions: ["Is your ankle swelling better?"] });
+    expect(result.answers).toEqual([{ question: "Is your ankle swelling better?", said: "No, it's worse today", concern: true }]);
+  });
+
+  it("sends the care-team questions to the summary model", async () => {
+    let body = "";
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => { body = String(init.body); return okResponse(); }));
+    await runSummary({ ...DATA, clinicianQuestions: ["Is your ankle swelling better?"] });
+    expect(body).toContain("Is your ankle swelling better?");
+    expect(body).toContain('"concern"');
+  });
+
+  it("defaults to no answers when the model leaves the field out", async () => {
+    const { answers: _drop, ...rest } = SUMMARY;
+    vi.stubGlobal("fetch", vi.fn(async () => responseFor({ candidates: [{ content: { parts: [{ text: JSON.stringify(rest) }] } }] })));
+    expect((await runSummary(DATA)).answers).toEqual([]);
   });
 });
