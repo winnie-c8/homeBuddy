@@ -12,9 +12,9 @@ export const Route = createFileRoute("/_authenticated/care/")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
   head: () => ({
     meta: [
-      { title: "Care team dashboard — Hearthline" },
+      { title: "Care team dashboard — homeBuddy" },
       { name: "description", content: "See every patient's daily status, flagged risks and open questions at a glance." },
-      { property: "og:title", content: "Care team dashboard — Hearthline" },
+      { property: "og:title", content: "Care team dashboard — homeBuddy" },
       { property: "og:description", content: "Green, yellow and red patient status from daily AI check-ins." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -53,7 +53,7 @@ function CareDashboard() {
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px]">
         <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-soft)]">
           {patients.length === 0 && (
-            <p className="p-8 text-muted-foreground">No patients yet. Ask a patient for their Hearthline code and add it on the right.</p>
+            <p className="p-8 text-muted-foreground">No patients yet. Ask a patient for their homeBuddy code and add it on the right.</p>
           )}
           {patients.map((p) => {
             const last = latestCheckIn(p);

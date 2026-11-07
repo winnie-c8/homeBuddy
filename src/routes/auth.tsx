@@ -17,9 +17,9 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — Hearthline" },
-      { name: "description", content: "Sign in or create a Hearthline account as a senior, family member or care team member." },
-      { property: "og:title", content: "Sign in — Hearthline" },
+      { title: "Sign in — homeBuddy" },
+      { name: "description", content: "Sign in or create a homeBuddy account as a senior, family member or care team member." },
+      { property: "og:title", content: "Sign in — homeBuddy" },
       { property: "og:description", content: "Accounts for seniors, families and care teams." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -143,7 +143,7 @@ function AuthPage() {
         {mode === "signup" ? "Create your account" : mode === "forgot" ? "Reset password" : "Welcome back"}
       </h1>
       <p className="mt-2 text-lg text-muted-foreground">
-        {mode === "signup" ? "Tell us who you are so we show the right page." : "Sign in to Hearthline."}
+        {mode === "signup" ? "Tell us who you are so we show the right page." : "Sign in to homeBuddy."}
       </p>
 
       {sent ? (

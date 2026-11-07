@@ -63,7 +63,7 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
   --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-display: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --color-status-green: var(--status-green);
   --color-status-green-soft: var(--status-green-soft);
   --color-status-yellow: var(--status-yellow);

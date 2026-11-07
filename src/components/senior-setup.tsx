@@ -31,7 +31,7 @@ export function SeniorSetup({ userId, defaultName }: { userId: string; defaultNa
   const field = "h-14 text-xl";
   return (
     <main className="mx-auto max-w-xl px-5 pb-24 pt-12">
-      <h1 className="text-5xl font-semibold">Welcome to Hearthline</h1>
+      <h1 className="text-5xl font-semibold">Welcome to homeBuddy</h1>
       <p className="mt-3 text-xl text-muted-foreground">A few details so Rosie knows how to greet you.</p>
       <form onSubmit={submit} className="mt-8 space-y-5 text-lg">
         <div className="space-y-2"><Label htmlFor="s-name" className="text-lg">Full name</Label><Input id="s-name" required value={name} onChange={(e) => setName(e.target.value)} className={field} /></div>

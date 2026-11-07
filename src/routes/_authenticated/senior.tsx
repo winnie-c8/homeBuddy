@@ -18,9 +18,9 @@ export const Route = createFileRoute("/_authenticated/senior")({
   beforeLoad: ({ context }) => requireRole(context.account, "senior"),
   head: () => ({
     meta: [
-      { title: "Today's check-in — Hearthline" },
+      { title: "Today's check-in — homeBuddy" },
       { name: "description", content: "Press one big button to talk with Rosie, your friendly daily check-in companion." },
-      { property: "og:title", content: "Today's check-in — Hearthline" },
+      { property: "og:title", content: "Today's check-in — homeBuddy" },
       { property: "og:description", content: "A simple daily voice check-in for seniors at home." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

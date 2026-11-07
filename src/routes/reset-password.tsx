@@ -10,10 +10,10 @@ import { getAccount, roleHome } from "@/lib/auth";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Choose a new password — Hearthline" },
-      { name: "description", content: "Set a new password for your Hearthline account." },
-      { property: "og:title", content: "Choose a new password — Hearthline" },
-      { property: "og:description", content: "Set a new password for your Hearthline account." },
+      { title: "Choose a new password — homeBuddy" },
+      { name: "description", content: "Set a new password for your homeBuddy account." },
+      { property: "og:title", content: "Choose a new password — homeBuddy" },
+      { property: "og:description", content: "Set a new password for your homeBuddy account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

@@ -28,7 +28,7 @@ export function JoinPatientCard({ kind }: { kind: "family" | "care_team" }) {
   return (
     <form onSubmit={submit} className="mt-6 space-y-3 rounded-3xl border border-border bg-card p-5">
       <h3 className="font-display text-lg font-semibold">{kind === "family" ? "Connect to your loved one" : "Add a patient"}</h3>
-      <p className="text-sm text-muted-foreground">Enter the 6-character code shown on their Hearthline page.</p>
+      <p className="text-sm text-muted-foreground">Enter the 6-character code shown on their homeBuddy page.</p>
       <div className="space-y-1">
         <Label htmlFor="join-code">Code</Label>
         <Input id="join-code" required value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={6} className="font-mono tracking-widest" />
