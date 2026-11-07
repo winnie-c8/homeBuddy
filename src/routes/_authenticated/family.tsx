@@ -66,7 +66,7 @@ function FamilyPage() {
 
   return (
     <main className="family-page relative isolate min-h-[calc(100dvh-5rem)] overflow-hidden px-5 pb-24 pt-10 sm:px-10">
-      <img src={familyBackground.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full object-cover object-top" />
+      <img src={familyBackground.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full object-fill" />
       <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center gap-4">
         <h1 className="break-words text-5xl font-bold sm:text-6xl">{p.name}</h1>
