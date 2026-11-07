@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runSummary, type CheckInSummary } from "./checkin.functions";
 
 const SUMMARY: CheckInSummary = {
@@ -28,7 +28,12 @@ const DATA = {
   meds: ["metformin"],
 };
 
-afterEach(() => vi.unstubAllGlobals());
+// Tests use a fake key; the real one only exists on Lovable's server.
+beforeEach(() => vi.stubEnv("GEMINI_API_KEY", "test"));
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 
 describe("runSummary model fallback", () => {
   it("uses the fast model first so the call saves quickly", async () => {
