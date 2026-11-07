@@ -119,7 +119,7 @@ function createLiveVoice(url: string, context: string, onEvent: (e: LiveEvent) =
     for (let i = 0; i < pcm.length; i++) pcm[i] = (bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8)) << 16 >> 16;
     const buf = outCtx.createBuffer(1, pcm.length, 24000);
     const ch = buf.getChannelData(0);
-    for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768;
+    for (let i = 0; i < pcm.length; i++) ch[i] = (pcm[i] ?? 0) / 32768;
     const src = outCtx.createBufferSource();
     src.buffer = buf;
     src.connect(outCtx.destination);
@@ -177,7 +177,7 @@ function createLiveVoice(url: string, context: string, onEvent: (e: LiveEvent) =
           if (state !== "active" || muted || socket?.readyState !== WebSocket.OPEN) return;
           const f = ev.inputBuffer.getChannelData(0);
           const pcm = new Int16Array(f.length);
-          for (let i = 0; i < f.length; i++) pcm[i] = Math.max(-1, Math.min(1, f[i])) * 0x7fff;
+          for (let i = 0; i < f.length; i++) pcm[i] = Math.max(-1, Math.min(1, f[i] ?? 0)) * 0x7fff;
           socket.send(JSON.stringify({ type: "app.audio", data: toBase64(new Uint8Array(pcm.buffer)) }));
         };
         node.connect(processor);
