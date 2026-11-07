@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
+const GEMINI_TEXT_MODEL = "gemini-flash-latest";
 
 const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
