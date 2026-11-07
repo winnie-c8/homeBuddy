@@ -4,6 +4,9 @@ import { formatDistanceToNow, format } from "date-fns";
 import { BellRing, Lock, Pill } from "lucide-react";
 import { Loading, StatusBadge } from "@/components/status-badge";
 import { useCare } from "@/lib/care-store";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, latestCheckIn, patientStatus } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/family")({
@@ -21,21 +24,35 @@ export const Route = createFileRoute("/_authenticated/family")({
   component: FamilyPage,
 });
 
-const ME = { id: "daniel", name: "Daniel Thompson", patientId: "margaret" };
-
 function FamilyPage() {
   const state = useCare();
-  if (!state) return <Loading />;
-  const p = state.patients.find((x) => x.id === ME.patientId)!;
+  const { account } = Route.useRouteContext();
+  const [linked, setLinked] = useState<boolean | null>(null);
+  useEffect(() => {
+    void supabase.from("patient_members").select("id").eq("user_id", account.id).then(({ data }) => setLinked((data?.length ?? 0) > 0));
+  }, [account.id, state]);
+  if (!state || linked === null) return <Loading />;
+  const ME = { id: account.id, name: account.displayName };
+  const p = state.patients[0];
 
-  if (!p.sharedWith.includes(ME.id)) {
+  if (!p) {
     return (
-      <main className="mx-auto max-w-2xl px-5 py-20 text-center">
-        <Lock className="mx-auto size-12 text-muted-foreground" />
-        <h1 className="mt-4 text-4xl font-semibold">{p.preferredName} isn't sharing right now</h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          {p.preferredName} has chosen not to share check-in details with you. You'll still be contacted in an emergency through her care team.
-        </p>
+      <main className="mx-auto max-w-xl px-5 py-16">
+        {linked ? (
+          <div className="text-center">
+            <Lock className="mx-auto size-12 text-muted-foreground" />
+            <h1 className="mt-4 text-4xl font-semibold">Not sharing right now</h1>
+            <p className="mt-3 text-lg text-muted-foreground">
+              Your loved one has chosen not to share check-in details with you. Their care team will still contact you in an emergency.
+            </p>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-4xl font-semibold">Hi {account.displayName}</h1>
+            <p className="mt-3 text-lg text-muted-foreground">Connect to your loved one to see their daily check-ins and get alerts.</p>
+            <JoinPatientCard kind="family" />
+          </>
+        )}
       </main>
     );
   }
@@ -46,7 +63,7 @@ function FamilyPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-5 pb-24 pt-12">
-      <p className="text-muted-foreground">Hi Daniel — here's how your mom is doing.</p>
+      <p className="text-muted-foreground">Hi {account.displayName} — here's how {p.preferredName} is doing.</p>
       <div className="mt-2 flex flex-wrap items-center gap-4">
         <h1 className="text-5xl font-semibold">{p.name}</h1>
         <StatusBadge status={patientStatus(p)} />
@@ -80,7 +97,7 @@ function FamilyPage() {
       </section>
 
       <section className="mt-8 rounded-3xl border border-border bg-card p-7">
-        <h2 className="flex items-center gap-2 text-2xl font-semibold"><Pill className="size-6 text-primary" /> Her care plan</h2>
+        <h2 className="flex items-center gap-2 text-2xl font-semibold"><Pill className="size-6 text-primary" /> Care plan</h2>
         <ul className="mt-4 list-disc space-y-1 pl-6 text-lg">
           {p.planItems.map((i) => <li key={i}>{i}</li>)}
         </ul>
