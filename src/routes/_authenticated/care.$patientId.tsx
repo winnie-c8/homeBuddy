@@ -376,8 +376,17 @@ function AskRosie({ p }: { p: Patient }) {
  * Number: the amount per day with the clinician's limits drawn as dashed lines.
  */
 function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
-  const h = questionHistory(p, q.text).slice(-14);
-  if (!h.length) return <p className="my-2 text-xs text-muted-foreground">No answers yet — the graph appears after the first call.</p>;
+  const all = questionHistory(p, q.text);
+  const h = all.slice(-14);
+  if (!h.length)
+    return (
+      <div className="my-3 bg-background p-3">
+        <div className="flex h-32 items-center justify-center border-2 border-dashed border-border text-sm text-muted-foreground">
+          {q.kind === "number" ? `Graph: ${q.unit || "amount"} per day${q.below !== undefined ? `, flag line at ${q.below}` : ""}${q.above !== undefined ? `, flag line at ${q.above}` : ""}` : "Graph: one bar per day (green = fine, red = flagged)"} — fills in after the first call
+        </div>
+        <AnswerTable q={q} rows={[]} />
+      </div>
+    );
   const last3 = h.slice(-3);
   const fine = last3.filter((x) => !x.flagged).length;
   const colour = (x: (typeof h)[number]) => (x.answer === "unclear" && x.value === null ? "var(--muted-foreground)" : x.flagged ? "var(--status-red)" : "var(--status-green)");
@@ -428,6 +437,41 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
       <p className="mt-1 text-xs text-muted-foreground">
         Fine {fine} of the last {last3.length} time{last3.length === 1 ? "" : "s"} · green = fine, red = flagged, grey = unclear
       </p>
+      <AnswerTable q={q} rows={all} />
     </div>
+  );
+}
+
+/** Every saved answer to one question, newest first: the raw data behind the graph. */
+function AnswerTable({ q, rows }: { q: ClinicianQuestion; rows: ReturnType<typeof questionHistory> }) {
+  return (
+    <details className="mt-2 text-sm" open={rows.length === 0 ? undefined : false}>
+      <summary className="cursor-pointer font-semibold">Answers table ({rows.length})</summary>
+      <table className="mt-2 w-full text-left">
+        <thead className="text-xs text-muted-foreground">
+          <tr>
+            <th className="py-1 pr-3">Day</th>
+            <th className="py-1 pr-3">Answer</th>
+            <th className="py-1 pr-3">Their words</th>
+            <th className="py-1">Flag</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={4} className="py-2 text-muted-foreground">No answers yet. Each call adds a row here.</td>
+            </tr>
+          )}
+          {[...rows].reverse().map((r, i) => (
+            <tr key={i} className="border-t border-border">
+              <td className="py-1 pr-3 whitespace-nowrap">{format(new Date(r.date), "EEE MMM d")}</td>
+              <td className="py-1 pr-3 font-semibold">{q.kind === "number" ? (r.value === null ? "unclear" : `${r.value}${q.unit ? ` ${q.unit}` : ""}`) : r.answer}</td>
+              <td className="py-1 pr-3">{r.said ? `“${r.said}”` : "—"}</td>
+              <td className="py-1">{r.flagged ? <span className="font-bold text-status-red">Flagged</span> : "Fine"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </details>
   );
 }
