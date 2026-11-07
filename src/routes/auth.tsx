@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { getAccount, roleHome, type AppRole } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-type Search = { redirect?: string };
+type Search = { redirect?: string | undefined };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (s: Record<string, unknown>): Search => ({
