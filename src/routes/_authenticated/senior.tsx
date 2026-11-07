@@ -39,6 +39,7 @@ function SeniorPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [phase, setPhase] = useState<"ready" | "saving" | "done">("ready");
   const [result, setResult] = useState<CheckInSummary | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const rowsRef = useRef<Row[]>([]);
   const alerted = useRef(new Set<string>());
   const lastSummary = useRef<CheckInSummary | null>(null);
@@ -137,43 +138,78 @@ function SeniorPage() {
 
   const greet = greetingFor(new Date());
 
-  return (
-    <main className="mx-auto max-w-3xl px-5 pb-24 pt-12 text-center">
-      <h1 className="text-5xl font-semibold md:text-6xl">
-        {greet}, {patient.preferredName}.
-      </h1>
-      <p className="mt-4 text-2xl text-muted-foreground">
-        {inCall ? "Rosie is here to talk with you." : `Rosie calls every day at ${patient.callTime}.`}
-      </p>
+  const lastLine = rows[rows.length - 1];
+  const history = [...patient.checkIns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
 
-      <div className="my-14 flex flex-col items-center gap-6">
-        {!inCall && phase !== "saving" && (
-          <button
-            onClick={begin}
-            className="animate-breathe grid size-56 place-items-center rounded-full bg-primary text-primary-foreground transition-transform active:scale-95"
-          >
-            <span className="flex flex-col items-center gap-3">
-              <Phone className="size-14" />
-              <span className="font-display text-3xl font-semibold leading-tight">
-                Talk to
-                <br />
-                Rosie
-              </span>
-            </span>
-          </button>
-        )}
-        {inCall && (
-          <>
-            <div className="grid size-56 place-items-center rounded-full bg-secondary">
-              {voice.status === "connected" ? (
-                <Volume2 className="size-20 text-primary" />
+  return (
+    <main className="pb-24">
+      <section className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_50%_40%,var(--sky-1),var(--sky-bright))] px-5 pb-16 pt-10 text-center">
+        <svg viewBox="0 0 900 640" preserveAspectRatio="none" className="absolute inset-0 -z-10 size-full" aria-hidden="true">
+          <path className="fill-sky-3" d="M0 140 Q60 110 100 160 L120 300 Q200 250 330 300 L360 520 Q450 440 600 400 Q650 350 720 380 L780 420 Q800 250 860 120 Q890 70 900 90 V640 H0Z" />
+          <path className="fill-sky-1" opacity="0.85" d="M0 230 Q80 210 110 290 L120 360 Q220 330 330 380 Q360 470 380 520 Q470 470 560 470 Q600 380 690 410 L780 470 Q790 300 850 210 Q890 180 900 200 V640 H0Z" />
+        </svg>
+        <h1 style={{ textShadow: "0 3px 6px rgb(0 0 0 / 0.3)" }} className="text-5xl font-bold text-scene-ink md:text-6xl">
+          {greet}, {patient.preferredName}
+        </h1>
+
+        <div className="mt-10 flex flex-col items-center gap-4">
+          {!inCall && phase !== "saving" ? (
+            <button
+              onClick={begin}
+              aria-label="Start checkup"
+              className="animate-breathe grid size-56 place-items-center rounded-full bg-call-green text-scene-ink shadow-lg transition-transform active:scale-95 md:size-64"
+            >
+              <Phone className="size-28 fill-current" strokeWidth={0} />
+            </button>
+          ) : (
+            <div className={`grid size-56 place-items-center rounded-full bg-call-green text-scene-ink shadow-lg md:size-64 ${voice.status === "connected" ? "animate-pulse" : ""}`}>
+              {voice.status === "connected" ? <Volume2 className="size-24" /> : <Loader2 className="size-20 animate-spin" />}
+            </div>
+          )}
+          <p style={{ textShadow: "0 2px 4px rgb(0 0 0 / 0.3)" }} className="text-3xl font-semibold text-scene-ink">
+            {phase === "saving"
+              ? "Saving your checkup…"
+              : !inCall
+                ? "Start Checkup"
+                : voice.status === "connecting"
+                  ? "Connecting…"
+                  : voice.status === "stopping"
+                    ? "Saying goodbye…"
+                    : "Talking with Rosie"}
+          </p>
+
+          {(inCall || phase !== "ready" || result) && (
+            <div aria-live="polite" className="w-full max-w-xl rounded-3xl bg-card/95 p-5 text-left text-lg shadow-lg">
+              {phase === "done" && result ? (
+                <>
+                  <h2 className="flex items-center gap-2 text-2xl font-semibold">
+                    <Check className="size-7 text-status-green" /> All done for today
+                  </h2>
+                  <p className="mt-2 leading-relaxed">{result.summary}</p>
+                  {result.questions.length > 0 && (
+                    <p className="mt-3 text-muted-foreground">
+                      Your question{result.questions.length > 1 ? "s were" : " was"} sent to your care team. Rosie will share the answer next time.
+                    </p>
+                  )}
+                </>
+              ) : phase === "saving" ? (
+                <p className="flex items-center gap-3"><Loader2 className="size-5 animate-spin" /> Sending today's notes to your care team…</p>
               ) : (
-                <Loader2 className="size-16 animate-spin text-primary" />
+                <p className="truncate">
+                  {lastLine ? (
+                    <>
+                      <span className="mr-2 font-bold">{lastLine.role === "assistant" ? "Rosie:" : "You:"}</span>
+                      {lastLine.text.length > 140 ? "…" + lastLine.text.slice(-140) : lastLine.text}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Rosie will start talking in a moment…</span>
+                  )}
+                </p>
               )}
             </div>
-            <p className="text-xl font-bold">
-              {voice.status === "connecting" ? "Connecting…" : voice.status === "stopping" ? "Saying goodbye…" : "You're talking with Rosie"}
-            </p>
+          )}
+
+          {inCall && (
             <div className="flex flex-wrap justify-center gap-4">
               <Button variant="outline" size="xl" disabled={voice.status !== "connected"} onClick={() => voice.setMuted(!voice.muted)}>
                 {voice.muted ? <MicOff /> : <Mic />} {voice.muted ? "Unmute" : "Mute"}
@@ -182,61 +218,40 @@ function SeniorPage() {
                 <PhoneOff /> End call
               </Button>
             </div>
-            {voice.playbackBlocked && (
-              <Button variant="warm" size="xl" onClick={voice.resumePlayback}>
-                <Volume2 /> Tap to hear Rosie
-              </Button>
-            )}
-          </>
-        )}
-        {phase === "saving" && (
-          <p className="flex items-center gap-3 text-2xl">
-            <Loader2 className="size-7 animate-spin" /> Sending today's notes to your care team…
-          </p>
-        )}
-        {voice.error && (
-          <p role="alert" className="max-w-md rounded-2xl bg-status-red-soft px-5 py-3 text-lg">
-            {voice.error}
-          </p>
-        )}
-        <audio ref={voice.audioRef} className="hidden" />
-      </div>
-
-      {phase === "done" && result && (
-        <section className="rounded-3xl border border-border bg-card p-8 text-left shadow-[var(--shadow-soft)]">
-          <h2 className="flex items-center gap-3 text-3xl font-semibold">
-            <Check className="size-8 text-status-green" /> All done for today
-          </h2>
-          <p className="mt-3 text-xl leading-relaxed">{result.summary}</p>
-          {result.questions.length > 0 && (
-            <p className="mt-4 text-lg text-muted-foreground">
-              Your question{result.questions.length > 1 ? "s were" : " was"} sent to your care team. Rosie will share the answer next time.
-            </p>
           )}
-        </section>
-      )}
+          {voice.playbackBlocked && (
+            <Button variant="warm" size="xl" onClick={voice.resumePlayback}>
+              <Volume2 /> Tap to hear Rosie
+            </Button>
+          )}
+          {voice.error && (
+            <p role="alert" className="max-w-md rounded-2xl bg-status-red-soft px-5 py-3 text-lg">{voice.error}</p>
+          )}
+          <audio ref={voice.audioRef} className="hidden" />
 
-      {rows.length > 0 && (
-        <section className="mt-10 text-left">
-          <h2 className="mb-3 text-xl font-semibold text-muted-foreground">What was said</h2>
-          <div className="space-y-3">
-            {rows.map((r, i) => (
-              <p
-                key={i}
-                className={
-                  r.role === "assistant"
-                    ? "rounded-2xl bg-secondary px-5 py-3 text-lg"
-                    : "ml-10 rounded-2xl bg-primary px-5 py-3 text-lg text-primary-foreground"
-                }
-              >
-                <span className="mr-2 font-bold">{r.role === "assistant" ? "Rosie:" : "You:"}</span>
-                {r.text}
-              </p>
-            ))}
-          </div>
-        </section>
-      )}
+          <button
+            onClick={() => setShowHistory((v) => !v)}
+            aria-expanded={showHistory}
+            className="mt-8 rounded-2xl bg-sky-3 px-6 py-3 text-2xl text-scene-ink shadow-md transition-transform active:scale-95"
+          >
+            Chat History
+          </button>
+          {showHistory && (
+            <div className="w-full max-w-xl space-y-3 rounded-3xl bg-card/95 p-5 text-left shadow-lg">
+              {history.length === 0 && <p className="text-lg text-muted-foreground">No checkups yet.</p>}
+              {history.map((c) => (
+                <div key={c.date} className="border-b border-border pb-3 last:border-0">
+                  <p className="font-bold">{new Date(c.date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</p>
+                  <p className="text-lg">{c.answered ? c.summary : "Missed call"}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-6 rounded-2xl bg-card/90 px-5 py-2 text-lg font-bold">In an emergency, call 911.</p>
+        </div>
+      </section>
 
+      <div className="mx-auto max-w-3xl px-5">
       <section className="mt-16 rounded-3xl border border-border bg-card p-8 text-left">
         <h2 className="flex items-center gap-3 text-2xl font-semibold">
           <ShieldCheck className="size-7 text-primary" /> Who can see my information
@@ -265,6 +280,7 @@ function SeniorPage() {
           ))}
         </ul>
       </section>
+      </div>
     </main>
   );
 }
