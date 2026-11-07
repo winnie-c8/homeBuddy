@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedFamilyRouteImport } from './routes/_authenticated/family'
 import { Route as AuthenticatedSeniorRouteImport } from './routes/_authenticated/senior'
 import { Route as AuthenticatedCareIndexRouteImport } from './routes/_authenticated/care.index'
@@ -20,30 +23,46 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedFamilyRoute = AuthenticatedFamilyRouteImport.update({
-  id: '/_authenticated/family',
-  path: '/family',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedFamilyRoute = AuthenticatedFamilyRouteImport.update({
+  id: '/family',
+  path: '/family',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSeniorRoute = AuthenticatedSeniorRouteImport.update({
-  id: '/_authenticated/senior',
+  id: '/senior',
   path: '/senior',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCareIndexRoute = AuthenticatedCareIndexRouteImport.update({
-  id: '/_authenticated/care/',
+  id: '/care/',
   path: '/care/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCarePatientIdRoute =
   AuthenticatedCarePatientIdRouteImport.update({
-    id: '/_authenticated/care/$patientId',
+    id: '/care/$patientId',
     path: '/care/$patientId',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/family': typeof AuthenticatedFamilyRoute
   '/senior': typeof AuthenticatedSeniorRoute
   '/care/$patientId': typeof AuthenticatedCarePatientIdRoute
@@ -51,6 +70,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/family': typeof AuthenticatedFamilyRoute
   '/senior': typeof AuthenticatedSeniorRoute
   '/care/$patientId': typeof AuthenticatedCarePatientIdRoute
@@ -59,6 +80,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/family': typeof AuthenticatedFamilyRoute
   '/_authenticated/senior': typeof AuthenticatedSeniorRoute
   '/_authenticated/care/$patientId': typeof AuthenticatedCarePatientIdRoute
@@ -66,12 +90,29 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/family' | '/senior' | '/care/$patientId' | '/care/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/family'
+    | '/senior'
+    | '/care/$patientId'
+    | '/care/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/family' | '/senior' | '/care/$patientId' | '/care'
+  to:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/family'
+    | '/senior'
+    | '/care/$patientId'
+    | '/care'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
     | '/_authenticated/family'
     | '/_authenticated/senior'
     | '/_authenticated/care/$patientId'
@@ -80,10 +121,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedFamilyRoute: typeof AuthenticatedFamilyRoute
-  AuthenticatedSeniorRoute: typeof AuthenticatedSeniorRoute
-  AuthenticatedCarePatientIdRoute: typeof AuthenticatedCarePatientIdRoute
-  AuthenticatedCareIndexRoute: typeof AuthenticatedCareIndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -95,43 +135,80 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/family': {
       id: '/_authenticated/family'
       path: '/family'
       fullPath: '/family'
       preLoaderRoute: typeof AuthenticatedFamilyRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/senior': {
       id: '/_authenticated/senior'
       path: '/senior'
       fullPath: '/senior'
       preLoaderRoute: typeof AuthenticatedSeniorRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/care/': {
       id: '/_authenticated/care/'
       path: '/care'
       fullPath: '/care/'
       preLoaderRoute: typeof AuthenticatedCareIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/care/$patientId': {
       id: '/_authenticated/care/$patientId'
       path: '/care/$patientId'
       fullPath: '/care/$patientId'
       preLoaderRoute: typeof AuthenticatedCarePatientIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedFamilyRoute: typeof AuthenticatedFamilyRoute
+  AuthenticatedSeniorRoute: typeof AuthenticatedSeniorRoute
+  AuthenticatedCarePatientIdRoute: typeof AuthenticatedCarePatientIdRoute
+  AuthenticatedCareIndexRoute: typeof AuthenticatedCareIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFamilyRoute: AuthenticatedFamilyRoute,
   AuthenticatedSeniorRoute: AuthenticatedSeniorRoute,
   AuthenticatedCarePatientIdRoute: AuthenticatedCarePatientIdRoute,
   AuthenticatedCareIndexRoute: AuthenticatedCareIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
