@@ -1,0 +1,19 @@
+import { describe, expect, it, vi } from "vitest";
+vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
+import { requireRole, roleHome, type Account } from "./auth";
+
+const acct = (role: Account["role"]): Account => ({ id: "1", email: "a@b.c", displayName: "A", phone: null, role });
+
+describe("role routing", () => {
+  it("sends each role to its own page", () => {
+    expect(roleHome("senior")).toBe("/senior");
+    expect(roleHome("family")).toBe("/family");
+    expect(roleHome("care_team")).toBe("/care");
+  });
+  it("blocks a family member from the care team dashboard", () => {
+    expect(() => requireRole(acct("family"), "care_team")).toThrow();
+  });
+  it("lets care team open the care team dashboard", () => {
+    expect(() => requireRole(acct("care_team"), "care_team")).not.toThrow();
+  });
+});
