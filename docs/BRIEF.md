@@ -45,13 +45,14 @@ The full loop from patient input to clinician review, across devices:
 - [x] Voice check-in for the senior, with an AI summary
 - [x] Green / yellow / red rules and alerts, with tests (`src/lib/care.ts`)
 - [x] Care dashboard and family view, using demo patients
-- [ ] **Clinician sets each patient's check-in questions**, and the voice call asks them
-      (the current "Questions" feature is the reverse: senior asks the doctor)
+- [ ] **Clinician sets each patient's check-in questions** with a "flag if" rule, and the
+      voice call asks them (#1); unanswered or flagged questions are asked again (#2, #3)
 - [ ] **Save patients, check-ins and alerts in Supabase**, so a check-in on the senior's
-      phone appears on the clinician's laptop. Lovable started this at 11:30 (`patients`
-      and `patient_members` tables, invite codes); tick once checked on two devices
-- [ ] Clinician can mark a flag "following up", and family sees it
-- [ ] Seed fictional demo patients with a few days of history
+      phone appears on the clinician's laptop. Saving is built and pages refresh every 20 s;
+      tick after the two-device run (#8)
+- [ ] Every flag says why and quotes the senior; routed as in "How the data flows" (#6)
+- [ ] Clinician can mark a flag "care team is on it", and family sees it (#7)
+- [ ] Demo accounts (senior, family, clinician) with a few days of history (#4, #5)
 
 ### Phase 2: stronger demo (target 3:30 pm)
 
