@@ -41,7 +41,7 @@ describe("detectUrgent whole words", () => {
   });
 });
 
-import { callContext as _ctx, followUps as _fu, greetingFor as _greet, seedState as _seed } from "./care";
+import { callContext as _ctx, followUps as _fu, greetingFor as _greet, createSampleState as _seed } from "./care";
 
 describe("daily call context", () => {
   it("greets by local time of day", () => {
