@@ -28,7 +28,15 @@ export type CheckIn = {
 export type YesNo = "yes" | "no" | "unclear";
 /** A care-team question's flag rule: flag when the answer is this. No rule = just record it. */
 export type FlagIf = "yes" | "no";
-export type QuestionAnswer = { question: string; said: string; answer: YesNo; flagIf?: FlagIf | undefined; flagged: boolean };
+export type QuestionAnswer = {
+  question: string;
+  said: string;
+  answer: YesNo;
+  flagIf?: FlagIf | undefined;
+  /** Turns red when flagged this many times in a row (1 = right away). No value = never turns red. */
+  redAfter?: number | undefined;
+  flagged: boolean;
+};
 
 /**
  * The rule for care-team questions. Deterministic: same answer + same rule = same result.
@@ -41,7 +49,7 @@ export function isAnswerFlagged(answer: YesNo, flagIf: FlagIf | undefined): bool
 
 /** Match the AI's answers to the questions that were asked, and apply each question's rule. */
 export function checkAnswers(
-  asked: { text: string; flagIf?: FlagIf }[],
+  asked: { text: string; flagIf?: FlagIf | undefined; redAfter?: number | undefined }[],
   heard: { question: string; said: string; answer: YesNo }[],
 ): QuestionAnswer[] {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
@@ -50,7 +58,7 @@ export function checkAnswers(
     const said = h?.said.trim() ?? "";
     // Not asked or no words captured counts as unclear.
     const answer: YesNo = h && said ? h.answer : "unclear";
-    return { question: q.text, said, answer, flagIf: q.flagIf, flagged: isAnswerFlagged(answer, q.flagIf) };
+    return { question: q.text, said, answer, flagIf: q.flagIf, redAfter: q.redAfter, flagged: isAnswerFlagged(answer, q.flagIf) };
   });
 }
 
@@ -183,9 +191,11 @@ export function findings(c: CheckIn, name = "Patient"): Finding[] {
     const q = a.question.trim();
     // Only quote the senior when they said more than a bare "no"/"yes".
     const quote = saidMoreThanYesNo(a.said) ? ` They said: "${a.said.trim()}"` : "";
+    // The clinician can make a question turn red right away (e.g. skipping dialysis even once).
+    const level: Finding["status"] = a.redAfter === 1 ? "red" : "yellow";
     if (a.answer === "unclear")
-      add(`question:${q}`, "yellow", `No clear answer to "${q}"${quote ? `.${quote}` : ""}`, `We couldn't get a clear answer from ${name} about "${q}"`);
-    else add(`question:${q}`, "yellow", `Answered ${a.answer} to "${q}"${quote ? `.${quote}` : ""}`, `${name} answered ${a.answer} to "${q}"`);
+      add(`question:${q}`, level, `No clear answer to "${q}"${quote ? `.${quote}` : ""}`, `We couldn't get a clear answer from ${name} about "${q}"`);
+    else add(`question:${q}`, level, `Answered ${a.answer} to "${q}"${quote ? `.${quote}` : ""}`, `${name} answered ${a.answer} to "${q}"`);
   }
   return out;
 }
@@ -216,10 +226,76 @@ export function latestDayCheckIns(p: Patient): CheckIn[] {
   return last ? p.checkIns.filter((c) => dayOf(c.date) === dayOf(last.date)) : [];
 }
 
+/** A built-in yellow reason on this many calendar days in a row turns red (decided Nov 7). */
+export const STREAK_DAYS = 3;
+const STREAK_LABEL: Record<string, string> = {
+  mood_low: "Low mood",
+  sleep_short: "Short sleep (under 5 h)",
+  meals_low: "Eating less (under 2 meals)",
+  fluids_low: "Low fluids",
+  pain: "Pain (4+/10)",
+  med_missed: "Missed doses",
+  med_unclear: "Unconfirmed doses",
+};
+
+/**
+ * Yellow that keeps happening becomes red. Two rules, both ending at the latest check-in:
+ * - a built-in reason (low mood, short sleep…) on STREAK_DAYS calendar days in a row;
+ * - a clinician question flagged on its last N asks in a row, where N is the question's "turns red after".
+ */
+export function escalations(p: Patient): Finding[] {
+  const sorted = [...p.checkIns].sort((a, b) => b.date.localeCompare(a.date));
+  const latest = sorted[0];
+  if (!latest) return [];
+  const out: Finding[] = [];
+  const keysByDay = new Map<string, Set<string>>();
+  for (const c of p.checkIns) {
+    const set = keysByDay.get(dayOf(c.date)) ?? new Set<string>();
+    findings(c).forEach((f) => set.add(f.key));
+    keysByDay.set(dayOf(c.date), set);
+  }
+  for (const [key, label] of Object.entries(STREAK_LABEL)) {
+    let n = 0;
+    const d = new Date(latest.date);
+    while (keysByDay.get(d.toDateString())?.has(key)) {
+      n++;
+      d.setDate(d.getDate() - 1);
+    }
+    if (n >= STREAK_DAYS)
+      out.push({ key: `${key}_streak`, status: "red", clinician: `${label} ${n} days in a row`, family: `${p.preferredName} has had ${label.replace(/ \(.*\)$/, "").toLowerCase()} ${n} days in a row` });
+  }
+  for (const a of latest.answers ?? []) {
+    if (!a.flagged || !a.redAfter || a.redAfter < 2) continue;
+    let n = 0;
+    for (const c of sorted) {
+      const x = (c.answers ?? []).find((y) => y.question === a.question);
+      if (!x) continue;
+      if (!x.flagged) break;
+      n++;
+    }
+    if (n >= a.redAfter)
+      out.push({
+        key: `question_streak:${a.question}`,
+        status: "red",
+        clinician: `"${a.question}" flagged ${n} times in a row (last answer: ${a.answer})`,
+        family: `${p.preferredName}'s answer to "${a.question}" has needed attention ${n} times in a row`,
+      });
+  }
+  return out;
+}
+
+/** Every recorded answer to one clinician question, oldest first (for the yes/no chart). */
+export function questionHistory(p: Patient, question: string): { date: string; answer: YesNo; flagged: boolean; said: string }[] {
+  return [...p.checkIns]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .flatMap((c) => (c.answers ?? []).filter((a) => a.question === question).map((a) => ({ date: c.date, answer: a.answer, flagged: a.flagged, said: a.said })));
+}
+
 /** A patient's colour is the worst colour of their latest day, so a later "I'm fine" call can't hide a fall. */
 export function patientStatus(p: Patient): Status {
   const day = latestDayCheckIns(p);
   if (!day.length) return "yellow";
+  if (escalations(p).length) return "red";
   const all = day.map(checkInStatus);
   return all.includes("red") ? "red" : all.includes("yellow") ? "yellow" : "green";
 }
@@ -235,7 +311,8 @@ export function alertsForCheckIn(p: Patient, c: CheckIn): Omit<Alert, "id">[] {
   const family = p.contacts.filter((x) => x.kind === "family" && p.sharedWith.includes(x.id)).map((x) => x.name);
   const care = p.contacts.filter((x) => x.kind === "care").map((x) => x.name);
   // Routing (decided Nov 7): red and yellow both go to the care team and to family the senior shares with.
-  return findings(c, p.preferredName).map((f) => ({
+  const isLatest = latestCheckIn(p)?.id === c.id;
+  return [...findings(c, p.preferredName), ...(isLatest ? escalations(p) : [])].map((f) => ({
     patientId: p.id,
     at: c.date,
     level: f.status === "red" ? "urgent" : "warning",

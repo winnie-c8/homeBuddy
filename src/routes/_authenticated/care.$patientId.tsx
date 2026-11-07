@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { clinicianQuestions, clinicianQuestionsOf } from "@/lib/clinician-questions";
 import { care, useCare } from "@/lib/care-store";
-import { checkInStatus, findings, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
+import { questionHistory, checkInStatus, findings, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/care/$patientId")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
@@ -260,6 +260,7 @@ function AskRosie({ p }: { p: Patient }) {
   const [busy, setBusy] = useState(false);
   const [flagIf, setFlagIf] = useState<"" | FlagIf>("");
   const [daily, setDaily] = useState(false);
+  const [redAfter, setRedAfter] = useState("");
   const { account } = useRouteContext({ from: "/_authenticated" });
   const list = clinicianQuestionsOf(p).reverse();
   return (
@@ -272,7 +273,7 @@ function AskRosie({ p }: { p: Patient }) {
           if (!text.trim()) return;
           setBusy(true);
           clinicianQuestions
-            .add(p.id, text.trim(), account.displayName, { flagIf: flagIf || undefined, daily })
+            .add(p.id, text.trim(), account.displayName, { flagIf: flagIf || undefined, daily, redAfter: redAfter ? Number(redAfter) : undefined })
             .then(() => setText(""))
             .finally(() => setBusy(false));
         }}
@@ -293,6 +294,18 @@ function AskRosie({ p }: { p: Patient }) {
           ))}
           {!flagIf && <span className="text-muted-foreground">(never, just record)</span>}
         </div>
+        {flagIf && (
+          <label className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm">
+            Turns red:
+            <select className="bg-background px-2 py-1" value={redAfter} onChange={(e) => setRedAfter(e.target.value)}>
+              <option value="">never</option>
+              <option value="1">right away</option>
+              <option value="2">after 2 in a row</option>
+              <option value="3">after 3 in a row</option>
+              <option value="5">after 5 in a row</option>
+            </select>
+          </label>
+        )}
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-4" checked={daily} onChange={(e) => setDaily(e.target.checked)} /> Ask every day
         </label>
@@ -304,8 +317,10 @@ function AskRosie({ p }: { p: Patient }) {
           <li key={q.id} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0">
             <div>
               <p className="text-lg">“{q.text}”</p>
+              <AnswerDots p={p} question={q.text} />
               <p className="text-xs text-muted-foreground">
                 {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
+                {q.flagIf && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} in a row` : "Never red"}`}
               </p>
               {q.answer ? (
                 <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
@@ -320,5 +335,30 @@ function AskRosie({ p }: { p: Patient }) {
         ))}
       </ul>
     </Panel>
+  );
+}
+
+/** Yes/no history for one clinician question: one dot per time it was asked, newest on the right. */
+function AnswerDots({ p, question }: { p: Patient; question: string }) {
+  const h = questionHistory(p, question).slice(-10);
+  if (!h.length) return null;
+  const last3 = h.slice(-3);
+  const fine = last3.filter((x) => !x.flagged).length;
+  const dot = (x: (typeof h)[number]) =>
+    x.answer === "unclear" ? "border-2 border-dashed border-foreground/50" : x.flagged ? "bg-status-red" : "bg-status-green";
+  return (
+    <div className="my-2">
+      <div className="flex items-end gap-2">
+        {h.map((x, i) => (
+          <div key={i} className="flex flex-col items-center gap-1" title={`${format(new Date(x.date), "MMM d")}: ${x.answer}${x.said ? ` — "${x.said}"` : ""}`}>
+            <span className={`block size-4 rounded-full ${dot(x)}`} />
+            <span className="text-[10px] text-muted-foreground">{format(new Date(x.date), "EEE")}</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Fine {fine} of the last {last3.length} time{last3.length === 1 ? "" : "s"} · green = fine, red = flagged, dashed = unclear
+      </p>
+    </div>
   );
 }

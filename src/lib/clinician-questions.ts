@@ -15,6 +15,8 @@ export type ClinicianQuestion = {
   createdAt: string;
   /** Flag the day when the answer is this (rule checked in care.ts). No rule = just record the answer. */
   flagIf?: FlagIf;
+  /** Turns red when flagged this many times in a row (1 = right away). Missing = never turns red. */
+  redAfter?: number;
   /** Ask on every call instead of once. */
   daily?: boolean;
   /** One-off questions: set once answered, and the question is done. Daily questions keep the latest answer here too. */
@@ -63,10 +65,10 @@ async function updateList(patientId: string, fn: (l: ClinicianQuestion[]) => Cli
 }
 
 export const clinicianQuestions = {
-  add: (patientId: string, text: string, askedBy: string, rule: { flagIf?: FlagIf | undefined; daily?: boolean } = {}) =>
+  add: (patientId: string, text: string, askedBy: string, rule: { flagIf?: FlagIf | undefined; daily?: boolean; redAfter?: number | undefined } = {}) =>
     updateList(patientId, (l) => [
       ...l,
-      { id: Math.random().toString(36).slice(2, 10), text, askedBy, createdAt: new Date().toISOString(), ...(rule.flagIf ? { flagIf: rule.flagIf } : {}), ...(rule.daily ? { daily: true } : {}) },
+      { id: Math.random().toString(36).slice(2, 10), text, askedBy, createdAt: new Date().toISOString(), ...(rule.flagIf ? { flagIf: rule.flagIf } : {}), ...(rule.daily ? { daily: true } : {}), ...(rule.flagIf && rule.redAfter ? { redAfter: rule.redAfter } : {}) },
     ]),
   remove: (patientId: string, id: string) => updateList(patientId, (l) => l.filter((q) => q.id !== id)),
   saveAnswers: (patientId: string, answers: ClinicianAnswer[]) =>

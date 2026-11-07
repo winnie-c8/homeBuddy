@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertStage, alertsForCheckIn, saidMoreThanYesNo, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
+import { alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -204,4 +204,46 @@ describe("clinician question wording", () => {
     expect(saidMoreThanYesNo("No, I didn't")).toBe(false);
     expect(saidMoreThanYesNo("No, the clinic was closed")).toBe(true);
   });
+});
+
+describe("yellow that keeps happening turns red (#10)", () => {
+  const p = { ...createSampleState().patients.find((x) => x.id === "margaret")!, checkIns: [] as CheckIn[] };
+  const day = (d: number, change: Partial<CheckIn>, id = `d${d}`): CheckIn => ({ ...ok, id, date: new Date(2026, 10, d, 10).toISOString(), ...change });
+  const dialysis = (d: number, answer: "yes" | "no", redAfter?: number) =>
+    day(d, { answers: checkAnswers([{ text: "Did you do your dialysis today?", flagIf: "no", redAfter }], [{ question: "Did you do your dialysis today?", said: answer, answer }]) });
+
+  it("low mood on 3 days in a row is red", () => {
+    const pp = { ...p, checkIns: [day(5, { mood: 1 }), day(6, { mood: 2 }), day(7, { mood: 1 })] };
+    expect(escalations(pp).map((f) => f.clinician)).toEqual(["Low mood 3 days in a row"]);
+    expect(patientStatus(pp)).toBe("red");
+  });
+  it("2 days, or 3 days with a gap, stays yellow", () => {
+    expect(patientStatus({ ...p, checkIns: [day(6, { mood: 1 }), day(7, { mood: 1 })] })).toBe("yellow");
+    expect(patientStatus({ ...p, checkIns: [day(4, { mood: 1 }), day(5, { mood: 1 }), day(7, { mood: 1 })] })).toBe("yellow");
+  });
+  it("different reasons on different days don't add up", () =>
+    expect(patientStatus({ ...p, checkIns: [day(5, { mood: 1 }), day(6, { sleepHours: 4 }), day(7, { meals: 1 })] })).toBe("yellow"));
+  it("a question set to 'right away' is red on the first flag", () => {
+    const c = dialysis(7, "no", 1);
+    expect(checkInStatus(c)).toBe("red");
+    expect(findings(c)[0]!.status).toBe("red");
+  });
+  it("a question set to 'after 3' turns red on the third flag in a row", () => {
+    const two = { ...p, checkIns: [dialysis(5, "no", 3), dialysis(6, "no", 3)] };
+    expect(patientStatus(two)).toBe("yellow");
+    const three = { ...p, checkIns: [...two.checkIns, dialysis(7, "no", 3)] };
+    expect(patientStatus(three)).toBe("red");
+    expect(escalations(three)[0]!.clinician).toBe('"Did you do your dialysis today?" flagged 3 times in a row (last answer: no)');
+  });
+  it("a fine answer resets the count", () =>
+    expect(patientStatus({ ...p, checkIns: [dialysis(4, "no", 3), dialysis(5, "yes", 3), dialysis(6, "no", 3), dialysis(7, "no", 3)] })).toBe("yellow"));
+  it("a question with no 'turns red' never escalates", () =>
+    expect(escalations({ ...p, checkIns: [dialysis(5, "no"), dialysis(6, "no"), dialysis(7, "no")] })).toEqual([]));
+  it("raises the red alert with the latest check-in", () => {
+    const pp = { ...p, checkIns: [day(5, { mood: 1 }), day(6, { mood: 1 }), day(7, { mood: 1 })] };
+    const a = alertsForCheckIn(pp, pp.checkIns[2]!);
+    expect(a.find((x) => x.key === "mood_low_streak")).toMatchObject({ level: "urgent", family: `${p.preferredName} has had low mood 3 days in a row` });
+  });
+  it("lists a question's answers oldest first for the chart", () =>
+    expect(questionHistory({ ...p, checkIns: [dialysis(6, "no"), dialysis(5, "yes")] }, "Did you do your dialysis today?").map((x) => x.answer)).toEqual(["yes", "no"]));
 });
