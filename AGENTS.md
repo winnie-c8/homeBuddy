@@ -34,3 +34,4 @@ use the editor.
 - Status (green/yellow/red) and alert routing rules live only in `src/lib/care.ts` with tests in `care.test.ts`; why: one source of truth for safety rules.
 - Voice calls use the persistent `/api/live` relay (`src/lib/live-relay.server.ts`, wired in `src/server.ts` and `live-vite-plugin.ts`); the browser sends patient context in `app.start`; why: Live sessions need an open control socket for the whole call.
 - Post-call transcripts are structured by `runSummary` in `src/lib/checkin.functions.ts`; why: keeps AI extraction server-side and testable.
+- Accounts use the connected Supabase auth; profile + role rows are created by the `handle_new_user` signup trigger, roles live only in `user_roles`, and role pages sit under `src/routes/_authenticated/` gated by `requireRole` in `src/lib/auth.ts`; why: roles must never be user-editable.
