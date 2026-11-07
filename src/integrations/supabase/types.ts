@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      patient_members: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["app_role"]
+          patient_id: string
+          relation: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["app_role"]
+          patient_id: string
+          relation?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["app_role"]
+          patient_id?: string
+          relation?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_members_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          senior_user_id: string
+          state: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          senior_user_id: string
+          state?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          senior_user_id?: string
+          state?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -64,12 +126,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      choose_role: {
+        Args: {
+          _display_name: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      join_patient: {
+        Args: { _code: string; _relation: string }
+        Returns: string
+      }
+      member_kind: {
+        Args: { _patient_id: string; _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
     }
     Enums: {
