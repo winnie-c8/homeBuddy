@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertStage, alertsForCheckIn, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
+import { alertStage, alertsForCheckIn, saidMoreThanYesNo, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -115,7 +115,7 @@ describe("every flag has a reason (#6)", () => {
     [{ pain: 5 }, "pain:yellow", "Pain 5/10"],
     [{ pain: 8 }, "pain_high:red", "Pain 8/10 (severe)"],
     [{ fall: true }, "fall:red", "Reported a fall"],
-    [{ urgent: ["chest pain"] }, "urgent:red", "Said: chest pain"],
+    [{ urgent: ["chest pain"] }, "urgent:red", "Mentioned chest pain"],
     [{ meds: [{ name: "Metformin", taken: "no" as const }] }, "med_missed:yellow", "Missed dose: Metformin"],
     [{ meds: [{ name: "Metformin", taken: "unclear" as const }] }, "med_unclear:yellow", "Couldn't confirm dose: Metformin"],
   ])("%o gives %s", (change, key, text) => {
@@ -181,5 +181,27 @@ describe("follow-up (#7)", () => {
       { ...base, id: "y-old", at: "2026-11-07T09:00:00.000Z" },
     ];
     expect(sortAlertsForClinician(list).map((a) => a.id)).toEqual(["r", "y-old", "y-new"]);
+  });
+});
+
+describe("clinician question wording", () => {
+  const p = createSampleState().patients.find((x) => x.id === "margaret")!;
+  const q = "Did you do your dialysis today?";
+  const msg = (said: string, answer: "yes" | "no" | "unclear") =>
+    alertsForCheckIn(p, { ...ok, answers: checkAnswers([{ text: q, flagIf: "no" }], [{ question: q, said, answer }]) }).find((a) => a.key?.startsWith("question:"))!;
+  it("a bare 'No.' isn't repeated as a quote", () => {
+    expect(msg("No.", "no").message).toBe(`Answered no to "${q}"`);
+    expect(msg("No.", "no").family).toBe(`${p.preferredName} answered no to "${q}"`);
+  });
+  it("quotes the senior when they said more", () =>
+    expect(msg("No, I skipped it today.", "no").message).toBe(`Answered no to "${q}". They said: "No, I skipped it today."`));
+  it("unclear answers read naturally", () => {
+    expect(msg("I think so, maybe", "unclear").message).toBe(`No clear answer to "${q}". They said: "I think so, maybe"`);
+    expect(msg("", "unclear").family).toBe(`We couldn't get a clear answer from ${p.preferredName} about "${q}"`);
+  });
+  it("knows a plain yes/no from a real answer", () => {
+    expect(saidMoreThanYesNo("Nope!")).toBe(false);
+    expect(saidMoreThanYesNo("No, I didn't")).toBe(false);
+    expect(saidMoreThanYesNo("No, the clinic was closed")).toBe(true);
   });
 });

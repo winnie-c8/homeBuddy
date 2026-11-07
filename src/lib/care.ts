@@ -168,7 +168,7 @@ export function findings(c: CheckIn, name = "Patient"): Finding[] {
   }
   if (c.fall) add("fall", "red", "Reported a fall", `${name} mentioned a fall`);
   const urgent = c.urgent.filter((u) => !/fall|fell/.test(u));
-  if (urgent.length) add("urgent", "red", `Said: ${urgent.join(", ")}`, `${name} mentioned ${urgent.join(", ")}`);
+  if (urgent.length) add("urgent", "red", `Mentioned ${urgent.join(", ")}`, `${name} mentioned ${urgent.join(", ")}`);
   if (c.pain !== null && c.pain >= 7) add("pain_high", "red", `Pain ${c.pain}/10 (severe)`, `${name} is in a lot of pain`);
   else if (c.pain !== null && c.pain >= 4) add("pain", "yellow", `Pain ${c.pain}/10`, `${name} is in some pain`);
   const missed = c.meds.filter((m) => m.taken === "no").map((m) => m.name);
@@ -180,11 +180,21 @@ export function findings(c: CheckIn, name = "Patient"): Finding[] {
   if (c.meals < 2) add("meals_low", "yellow", `${c.meals} meal${c.meals === 1 ? "" : "s"} so far (under 2)`, `${name} is eating less today`);
   if (c.fluids === "low") add("fluids_low", "yellow", "Low fluids", `${name} isn't drinking much`);
   for (const a of (c.answers ?? []).filter((x) => x.flagged)) {
-    const what = a.answer === "unclear" ? "couldn't confirm an answer" : `answered ${a.answer}`;
-    const quote = a.said ? ` — "${a.said}"` : "";
-    add(`question:${a.question}`, "yellow", `Care team question "${a.question}": ${what}${quote}`, `${name}: a check from the care team needs a look (${a.question.replace(/\?$/, "")})`);
+    const q = a.question.trim();
+    // Only quote the senior when they said more than a bare "no"/"yes".
+    const quote = saidMoreThanYesNo(a.said) ? ` They said: "${a.said.trim()}"` : "";
+    if (a.answer === "unclear")
+      add(`question:${q}`, "yellow", `No clear answer to "${q}"${quote ? `.${quote}` : ""}`, `We couldn't get a clear answer from ${name} about "${q}"`);
+    else add(`question:${q}`, "yellow", `Answered ${a.answer} to "${q}"${quote ? `.${quote}` : ""}`, `${name} answered ${a.answer} to "${q}"`);
   }
   return out;
+}
+
+const BARE = new Set(["yes", "no", "yeah", "yep", "nope", "nah", "no i didnt", "no i did not", "yes i did", "i did", "i didnt"]);
+/** True when the senior's words add something beyond a plain yes or no. */
+export function saidMoreThanYesNo(said: string): boolean {
+  const t = said.toLowerCase().replace(/[^a-z ]/g, "").replace(/\s+/g, " ").trim();
+  return t.length > 0 && !BARE.has(t);
 }
 
 /** Status of one check-in: the most serious finding, or green when nothing fired. */
