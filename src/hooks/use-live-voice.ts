@@ -172,7 +172,7 @@ function createLiveVoice(url: string, context: string, onEvent: (e: LiveEvent) =
         if (state !== "starting" || !inCtx || !mic) return;
         state = "active";
         const node = inCtx.createMediaStreamSource(mic);
-        processor = inCtx.createScriptProcessor(2048, 1, 1);
+        processor = inCtx.createScriptProcessor(1024, 1, 1);
         processor.onaudioprocess = (ev) => {
           if (state !== "active" || muted || socket?.readyState !== WebSocket.OPEN) return;
           const f = ev.inputBuffer.getChannelData(0);
