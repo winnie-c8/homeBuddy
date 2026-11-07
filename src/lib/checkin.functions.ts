@@ -12,6 +12,7 @@ const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
   meds: z.array(z.string().max(120)).max(30),
   name: z.string().max(120).optional(),
+  clinicianQuestions: z.array(z.string().max(500)).max(20).optional(),
 });
 
 export type CheckInSummary = {
@@ -25,6 +26,8 @@ export type CheckInSummary = {
   urgent: string[];
   questions: string[];
   summary: string;
+  /** Senior's answers to questions the care team asked Rosie to put to them. */
+  clinicianAnswers?: { question: string; said: string }[];
 };
 
 const schema = {
@@ -50,6 +53,16 @@ const schema = {
     urgent: { type: "array", items: { type: "string" }, description: "Urgent symptoms mentioned, e.g. chest pain" },
     questions: { type: "array", items: { type: "string" }, description: "Questions the senior wants passed to the care team" },
     summary: { type: "string", description: "2-3 plain sentences for the care team" },
+    clinicianAnswers: {
+      type: "array",
+      description: "For each care-team question, what the senior answered in their own words; empty 'said' if not asked/answered",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["question", "said"],
+        properties: { question: { type: "string" }, said: { type: "string" } },
+      },
+    },
   },
 } as const;
 
@@ -73,7 +86,7 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
         contents: [
           {
             role: "user",
-            parts: [{ text: `Senior's name: ${data.name || "unknown"}\nExpected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
+            parts: [{ text: `Senior's name: ${data.name || "unknown"}\nExpected medications: ${data.meds.join(", ") || "none"}\nCare team questions (copy each exactly into clinicianAnswers): ${(data.clinicianQuestions ?? []).join(" | ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
           },
         ],
         generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema },

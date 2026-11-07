@@ -11,6 +11,7 @@ import { useLiveVoice, type LiveEvent } from "@/hooks/use-live-voice";
 import { care, patientRows, useCare } from "@/lib/care-store";
 import { SeniorSetup } from "@/components/senior-setup";
 import { callContext, detectUrgent, greetingFor } from "@/lib/care";
+import { clinicianContext, clinicianQuestions, pendingClinicianQuestions } from "@/lib/clinician-questions";
 import { summarizeCheckIn, type CheckInSummary } from "@/lib/checkin.functions";
 
 export const Route = createFileRoute("/_authenticated/senior")({
@@ -74,7 +75,7 @@ function SeniorPage() {
     const patient = state?.patients.find((p) => p.id === PATIENT_ID);
     if (!patient) return;
     setPhase("saving");
-    summarize({ data: { transcript, meds: patient.meds.map((m) => m.name), name: patient.name } })
+    summarize({ data: { transcript, meds: patient.meds.map((m) => m.name), name: patient.name, clinicianQuestions: pendingClinicianQuestions(patient).map((q) => q.text) } })
       .catch((): CheckInSummary => {
         // AI summary unavailable: still save the call so the care team sees it.
         const said = transcript.filter((r) => r.role === "user").map((r) => r.text.trim()).join(" ");
@@ -106,7 +107,9 @@ function SeniorPage() {
           },
           s.questions,
         );
-      }).then(() => {
+      }).then(async () => {
+        const answers = lastSummary.current?.clinicianAnswers ?? [];
+        if (answers.length) await clinicianQuestions.saveAnswers(PATIENT_ID, answers).catch(() => {});
         setResult(lastSummary.current);
         setPhase("done");
       })
@@ -126,7 +129,7 @@ function SeniorPage() {
     setRows([]);
     setResult(null);
     setPhase("ready");
-    voice.start(callContext(patient, state.questions));
+    voice.start([callContext(patient, state.questions), clinicianContext(patient)].filter(Boolean).join("\n"));
   };
 
   const greet = greetingFor(new Date());
