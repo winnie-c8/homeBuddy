@@ -89,6 +89,7 @@ GitHub Actions (lint, tests, build on every push) · Figma (screen designs).
 
 The AI listens and pulls out answers; written, tested rules decide the colour. Every flag
 can say which rule fired and quote the patient.
+Each person's flow, where their data lives, and the edge cases are in `docs/FLOWS.md`.
 
 1. **Check-in, once a day** at the patient's call time. The call asks that patient's
    questions (set by the clinician) plus their meds, if they have any.

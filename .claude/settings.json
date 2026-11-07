@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "ClaudeInChromeDomain(localhost:8080)",
+      "ClaudeInChromeDomain(id-preview--97ed5b41-1f47-4abb-8035-8762bcb782c8.lovable.app)"
+    ]
+  }
+}

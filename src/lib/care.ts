@@ -1,4 +1,4 @@
-// Domain model, sample patients and status/alert rules for Hearthline (demo data, client-side).
+// Domain model, sample patients and status/alert rules for homeBuddy. All flag rules live here, with tests in care.test.ts.
 
 export type Status = "green" | "yellow" | "red";
 export type Taken = "yes" | "no" | "unclear";
