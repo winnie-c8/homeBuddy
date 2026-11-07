@@ -303,8 +303,42 @@ export function createSampleState(today = new Date()): CareState {
 }
 
 /** Plain text the voice companion receives before a call. */
-export function callContext(p: Patient, questions: Question[]): string {
+/** Time-of-day greeting for the senior's local clock. */
+export function greetingFor(now: Date): "Good morning" | "Good afternoon" | "Good evening" {
+  const h = now.getHours();
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+
+/** Warning signs from the last few days that Rosie should follow up on today. */
+export function followUps(p: Patient, now: Date = new Date(), days = 3): string[] {
+  const since = now.getTime() - days * 86400000;
+  const recent = p.checkIns
+    .filter((c) => c.answered && new Date(c.date).getTime() >= since && new Date(c.date).getTime() <= now.getTime())
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const out: string[] = [];
+  for (const c of recent) {
+    const d = new Date(c.date);
+    const ago = Math.round((new Date(now.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86400000);
+    const when = ago <= 0 ? "Earlier today" : ago === 1 ? "Yesterday" : `${ago} days ago`;
+    const notes: string[] = [];
+    if (c.pain !== null && c.pain >= 3) notes.push(`pain ${c.pain}/10`);
+    if (c.fall) notes.push("a fall or near-fall");
+    if (c.urgent.length) notes.push(`mentioned ${c.urgent.join(", ")}`);
+    if (c.mood !== null && c.mood <= 2) notes.push("low mood");
+    if (c.fluids === "low") notes.push("not drinking much");
+    if (c.sleepHours !== null && c.sleepHours < 5) notes.push(`only ${c.sleepHours} hours of sleep`);
+    const missed = c.meds.filter((m) => m.taken === "no").map((m) => m.name);
+    if (missed.length) notes.push(`missed ${missed.join(", ")}`);
+    if (notes.length) out.push(`${when}: ${notes.join("; ")}. Their words/summary: ${c.summary}`);
+  }
+  return out;
+}
+
+export function callContext(p: Patient, questions: Question[], now: Date = new Date()): string {
+  const time = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const day = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const lines = [
+    `Right now it is ${time} on ${day} for them. Open with "${greetingFor(now)}, ${p.preferredName}!"`,
     `Name: ${p.name} (call them ${p.preferredName}), age ${p.age}.`,
     `Medications to confirm today: ${p.meds.map((m) => `${m.name} ${m.dose} (${m.time})`).join("; ")}.`,
     `Current care plan: ${p.planItems.join("; ")}.`,
@@ -314,5 +348,10 @@ export function callContext(p: Patient, questions: Question[]): string {
   const answers = questions.filter((q) => q.patientId === p.id && q.answer && !q.deliveredAt);
   if (answers.length)
     lines.push(`Answers from the care team to share: ${answers.map((q) => `They asked "${q.text}" — ${q.answeredBy} says: ${q.answer}`).join(" ")}`);
+  const fu = followUps(p, now);
+  if (fu.length)
+    lines.push(
+      `Things they mentioned in recent calls — early in the call, gently ask how each is doing now (e.g. "Yesterday you said your head hurt — is it still bothering you?"):\n- ${fu.join("\n- ")}`,
+    );
   return lines.join("\n");
 }

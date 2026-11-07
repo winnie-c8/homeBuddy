@@ -11,6 +11,7 @@ const MODEL_TIMEOUT_MS = 10000;
 const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
   meds: z.array(z.string().max(120)).max(30),
+  name: z.string().max(120).optional(),
 });
 
 export type CheckInSummary = {
@@ -56,7 +57,7 @@ const schema = {
 export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSummary> {
     const key = process.env["GEMINI_API_KEY"];
     if (!key) throw new Error("GEMINI_API_KEY is not set");
-    const text = data.transcript.map((t) => `${t.role === "user" ? "Senior" : "Companion"}: ${t.text}`).join("\n");
+    const text = data.transcript.map((t) => `${t.role === "user" ? data.name || "Senior" : "Rosie"}: ${t.text}`).join("\n");
     const payload = JSON.stringify({
         systemInstruction: {
           parts: [
@@ -64,14 +65,15 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
               text:
                 "Extract a daily check-in record from a phone call between an AI companion and an older adult. " +
                 "Only record what the senior actually said; use 'unclear' or null when not discussed. " +
-                "List every expected medication. Do not add medical advice.",
+                "List every expected medication. Do not add medical advice. " +
+                "Write the summary about the senior by name (e.g. 'Margaret slept well...'), never 'the senior' or 'the patient'.",
             },
           ],
         },
         contents: [
           {
             role: "user",
-            parts: [{ text: `Expected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
+            parts: [{ text: `Senior's name: ${data.name || "unknown"}\nExpected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
           },
         ],
         generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema },
