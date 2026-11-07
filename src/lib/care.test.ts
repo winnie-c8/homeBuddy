@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsForCheckIn, checkInStatus, createSampleState, type CheckIn } from "./care";
+import { alertsForCheckIn, detectUrgent, checkInStatus, createSampleState, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -29,5 +29,14 @@ describe("alerts", () => {
   it("raises a warning for a missed dose", () => {
     const a = alertsForCheckIn(p, { ...ok, meds: [{ name: "Metformin", taken: "no" }] })[0]!;
     expect(a.level).toBe("warning");
+  });
+});
+
+describe("detectUrgent whole words", () => {
+  it("does not flag 'fellow' as a fall", () => {
+    expect(detectUrgent("I'm a fellow being")).toEqual([]);
+  });
+  it("still flags 'I fell'", () => {
+    expect(detectUrgent("I fell this morning")).toEqual(["fell"]);
   });
 });

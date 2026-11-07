@@ -75,6 +75,16 @@ function SeniorPage() {
     if (!patient) return;
     setPhase("saving");
     summarize({ data: { transcript, meds: patient.meds.map((m) => m.name) } })
+      .catch((): CheckInSummary => {
+        // AI summary unavailable: still save the call so the care team sees it.
+        const said = transcript.filter((r) => r.role === "user").map((r) => r.text.trim()).join(" ");
+        return {
+          meds: patient.meds.map((m) => ({ name: m.name, taken: "unclear" as const })),
+          meals: 0, fluids: "unknown", sleepHours: null, mood: null, pain: null, fall: false,
+          urgent: [], questions: [],
+          summary: `Automatic summary unavailable. The senior said: "${said.slice(0, 600)}"`,
+        };
+      })
       .then((s) => {
         lastSummary.current = s;
         const urgent = [...new Set([...s.urgent, ...alerted.current])];
