@@ -225,19 +225,19 @@ function PlanEditor({ p }: { p: Patient }) {
       <p className="text-sm text-muted-foreground">Rosie explains changes on the next call.</p>
       <ul className="mt-4 space-y-2">
         {items.map((i, idx) => (
-          <li key={idx} className="flex items-center justify-between gap-2 rounded-xl bg-muted px-3 py-2">
+          <li key={idx} className="flex items-center justify-between gap-2 bg-card px-3 py-2">
             {i}
             <Button size="icon" variant="ghost" aria-label="Remove" onClick={() => setItems(items.filter((_, j) => j !== idx))}><Trash2 /></Button>
           </li>
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add a plan item" />
-        <Button variant="outline" onClick={() => { if (newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }}><Plus /> Add</Button>
+        <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add a plan item" className="rounded-none bg-card" />
+        <Button className="rounded-none bg-pt-btn text-primary-foreground hover:bg-pt-ink" onClick={() => { if (newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }}><Plus /> Add</Button>
       </div>
-      <Textarea className="mt-4" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed, in plain words (e.g. 'Take your water pill at lunch instead of breakfast')" />
+      <Textarea className="mt-4 rounded-none bg-card" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed, in plain words (e.g. 'Take your water pill at lunch instead of breakfast')" />
       <Button
-        className="mt-3"
+        className="mt-3 rounded-none bg-pt-btn text-primary-foreground hover:bg-pt-ink"
         disabled={!dirty && !note.trim()}
         onClick={() => {
           void care.addPlanChange(p.id, note.trim() || "The care plan was updated.", items);
