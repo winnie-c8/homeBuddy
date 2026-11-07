@@ -25,7 +25,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
         <Link to="/" className="flex items-center gap-2 text-foreground">
-          <img src={logo} alt="" className="h-9 w-auto rounded-md" />
+          <img src={logo} alt="" className="h-9 w-auto" />
           <span className="font-display text-xl font-semibold">homeBuddy</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
