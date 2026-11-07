@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
-import { clinicianQuestions, clinicianQuestionsOf } from "@/lib/clinician-questions";
+import { clinicianQuestions, clinicianQuestionsOf, everyDaysOf, frequencyLabel } from "@/lib/clinician-questions";
 import { care, useCare } from "@/lib/care-store";
 import { questionHistory, checkInStatus, findings, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
 
@@ -259,7 +259,7 @@ function AskRosie({ p }: { p: Patient }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [flagIf, setFlagIf] = useState<"" | FlagIf>("");
-  const [daily, setDaily] = useState(false);
+  const [everyDays, setEveryDays] = useState("");
   const [redAfter, setRedAfter] = useState("");
   const [kind, setKind] = useState<"yesno" | "number">("yesno");
   const [unit, setUnit] = useState("");
@@ -283,8 +283,8 @@ function AskRosie({ p }: { p: Patient }) {
               text.trim(),
               account.displayName,
               kind === "number"
-                ? { kind, unit: unit.trim() || undefined, below: below === "" ? undefined : Number(below), above: above === "" ? undefined : Number(above), daily, redAfter: redAfter ? Number(redAfter) : undefined }
-                : { flagIf: flagIf || undefined, daily, redAfter: redAfter ? Number(redAfter) : undefined },
+                ? { kind, unit: unit.trim() || undefined, below: below === "" ? undefined : Number(below), above: above === "" ? undefined : Number(above), everyDays: everyDays ? Number(everyDays) : undefined, redAfter: redAfter ? Number(redAfter) : undefined }
+                : { flagIf: flagIf || undefined, everyDays: everyDays ? Number(everyDays) : undefined, redAfter: redAfter ? Number(redAfter) : undefined },
             )
             .then(() => setText(""))
             .finally(() => setBusy(false));
@@ -325,20 +325,19 @@ function AskRosie({ p }: { p: Patient }) {
           {!flagIf && <span className="text-muted-foreground">(never, just record)</span>}
         </div>
         )}
-        {hasRule && (
-          <label className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm">
-            Turns red:
-            <select className="bg-background px-2 py-1" value={redAfter} onChange={(e) => setRedAfter(e.target.value)}>
-              <option value="">never</option>
-              <option value="1">right away</option>
-              <option value="2">after 2 in a row</option>
-              <option value="3">after 3 in a row</option>
-              <option value="5">after 5 in a row</option>
-            </select>
-          </label>
-        )}
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" className="size-4" checked={daily} onChange={(e) => setDaily(e.target.checked)} /> Ask every day
+        <label className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm">
+          Turns red after
+          <Input className="h-8 w-14 rounded-none" type="number" min={1} value={redAfter} onChange={(e) => setRedAfter(e.target.value)} placeholder="–" />
+          in a row
+          <span className="text-muted-foreground">
+            {!hasRule ? "(set a flag rule first)" : redAfter === "1" ? "(right away)" : !redAfter ? "(blank = never)" : ""}
+          </span>
+        </label>
+        <label className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm">
+          Ask every
+          <Input className="h-8 w-14 rounded-none" type="number" min={1} value={everyDays} onChange={(e) => setEveryDays(e.target.value)} placeholder="–" />
+          days
+          <span className="text-muted-foreground">{everyDays === "1" ? "(every call)" : !everyDays ? "(blank = once)" : ""}</span>
         </label>
         <Button type="submit" className="rounded-none" disabled={busy || !text.trim()}><Plus /> Add question</Button>
       </form>
@@ -350,7 +349,7 @@ function AskRosie({ p }: { p: Patient }) {
               <p className="text-lg">“{q.text}”</p>
               <AnswerDots p={p} question={q.text} />
               <p className="text-xs text-muted-foreground">
-                {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.kind === "number"
+                {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {frequencyLabel(q)} · {q.kind === "number"
                   ? `Number${q.unit ? ` (${q.unit})` : ""} · ${[q.below !== undefined ? `flag below ${q.below}` : "", q.above !== undefined ? `flag above ${q.above}` : ""].filter(Boolean).join(", ") || "no flag"}`
                   : q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
                 {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} in a row` : "Never red"}`}
@@ -361,7 +360,7 @@ function AskRosie({ p }: { p: Patient }) {
                 <p className="mt-2 text-sm text-muted-foreground">Waiting — Rosie will ask on the next call</p>
               )}
             </div>
-            {(q.daily || !q.answer) && (
+            {(everyDaysOf(q) >= 1 || !q.answer) && (
               <Button size="icon" variant="ghost" aria-label="Remove question" onClick={() => void clinicianQuestions.remove(p.id, q.id)}><Trash2 /></Button>
             )}
           </li>
