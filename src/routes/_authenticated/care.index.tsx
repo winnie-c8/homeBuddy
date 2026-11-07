@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { BellRing, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
+import { Loading } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, latestCheckIn, patientStatus, type Status } from "@/lib/care";
