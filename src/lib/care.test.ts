@@ -31,3 +31,12 @@ describe("alerts", () => {
     expect(a.level).toBe("warning");
   });
 });
+
+describe("detectUrgent whole words", () => {
+  it("does not flag 'fellow' as a fall", () => {
+    expect(detectUrgent("I'm a fellow being")).toEqual([]);
+  });
+  it("still flags 'I fell'", () => {
+    expect(detectUrgent("I fell this morning")).toEqual(["fell"]);
+  });
+});
