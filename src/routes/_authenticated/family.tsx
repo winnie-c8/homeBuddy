@@ -1,7 +1,7 @@
 import { requireRole } from "@/lib/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow, format } from "date-fns";
-import { BellRing, Lock, Pill } from "lucide-react";
+import { BellRing, Lock } from "lucide-react";
 import { Loading, StatusBadge } from "@/components/status-badge";
 import { useCare } from "@/lib/care-store";
 import { useEffect, useState } from "react";
