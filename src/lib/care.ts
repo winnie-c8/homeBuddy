@@ -75,7 +75,8 @@ export const URGENT_WORDS = [
 
 export function detectUrgent(text: string): string[] {
   const t = text.toLowerCase();
-  return URGENT_WORDS.filter((w) => t.includes(w));
+  // Whole words only, so "fellow" doesn't count as "fell".
+  return URGENT_WORDS.filter((w) => new RegExp(`(^|[^a-z'])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z'])`).test(t));
 }
 
 /** Status of one check-in: red = act now, yellow = watch, green = on track. */

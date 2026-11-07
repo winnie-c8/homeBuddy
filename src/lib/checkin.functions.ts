@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const GEMINI_TEXT_MODEL = "gemini-flash-latest";
+// Tried in order; Google often answers 503 "high demand" on a single model.
+const GEMINI_TEXT_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
+const RETRYABLE = new Set([429, 500, 503, 504]);
 
 const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
@@ -52,10 +54,7 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
     const key = process.env["GEMINI_API_KEY"];
     if (!key) throw new Error("GEMINI_API_KEY is not set");
     const text = data.transcript.map((t) => `${t.role === "user" ? "Senior" : "Companion"}: ${t.text}`).join("\n");
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT_MODEL}:generateContent`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": key },
-      body: JSON.stringify({
+    const payload = JSON.stringify({
         systemInstruction: {
           parts: [
             {
@@ -73,15 +72,32 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
           },
         ],
         generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema },
-      }),
-    });
-    if (!res.ok) {
-      console.error("Gemini summary failed", res.status, (await res.text()).slice(0, 500));
-      throw new Error("Summary service failed");
+      });
+    for (const model of GEMINI_TEXT_MODELS) {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: payload,
+        signal: AbortSignal.timeout(25000),
+      }).catch((e: unknown) => {
+        console.error("Gemini summary network error", model, e);
+        return null;
+      });
+      if (!res) continue;
+      if (!res.ok) {
+        console.error("Gemini summary failed", model, res.status, (await res.text()).slice(0, 300));
+        if (RETRYABLE.has(res.status) || res.status === 404) continue;
+        throw new Error("Summary service failed");
+      }
+      const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const out = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
+      try {
+        return JSON.parse(out) as CheckInSummary;
+      } catch {
+        console.error("Gemini summary bad JSON", model);
+      }
     }
-    const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    const out = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
-    return JSON.parse(out) as CheckInSummary;
+    throw new Error("Summary service failed");
 }
 
 export const summarizeCheckIn = createServerFn({ method: "POST" })
