@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsForCheckIn, checkInStatus, createSampleState, type CheckIn } from "./care";
+import { alertsForCheckIn, detectUrgent, checkInStatus, createSampleState, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
