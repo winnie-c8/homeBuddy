@@ -126,6 +126,10 @@ export const care = {
       return { ...b, alerts: [{ id: uid(), patientId, at: new Date().toISOString(), level: "urgent", message, notified }, ...b.alerts] };
     });
   },
+  /** Short call: Rosie only greets and asks the care team's questions for this patient. */
+  async setShortCall(patientId: string, on: boolean) {
+    await update(patientId, (b) => ({ ...b, patient: { ...b.patient, shortCall: on } }));
+  },
   /** Clinician picks up an alert ("On it"); family see who is handling it. */
   async markOnIt(patientId: string, id: string, by: string) {
     await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, onItBy: by, onItAt: new Date().toISOString() } : a)) }));

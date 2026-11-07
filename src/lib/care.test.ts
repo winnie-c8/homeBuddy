@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, isNumberFlagged, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
+import { SHORT_CALL_MARKER, callContext, alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, isNumberFlagged, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -266,4 +266,15 @@ describe("number questions", () => {
     const day = (d: number, n: number): CheckIn => ({ ...ok, id: `w${d}`, date: new Date(2026, 10, d, 10).toISOString(), answers: checkAnswers([{ ...water, redAfter: 2 }], heard(String(n), n)) });
     expect(escalations({ ...p, checkIns: [day(6, 3), day(7, 4)] })[0]!.clinician).toBe('"How many glasses of water today?" flagged 2 days in a row (last answer: 4 glasses)');
   });
+});
+
+describe("short calls", () => {
+  it("meals not asked (null) is not flagged as eating less", () => expect(findings({ ...ok, meals: null })).toEqual([]));
+  it("0 meals reported is still flagged", () => expect(findings({ ...ok, meals: 0 }).map((f) => f.key)).toEqual(["meals_low"]));
+});
+
+describe("short call setting", () => {
+  const p = createSampleState().patients.find((x) => x.id === "margaret")!;
+  it("is off by default: full call notes", () => expect(callContext(p, [])).not.toContain(SHORT_CALL_MARKER));
+  it("marks short-call patients for the voice relay", () => expect(callContext({ ...p, shortCall: true }, []).split("\n")[0]).toBe(SHORT_CALL_MARKER));
 });

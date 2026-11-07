@@ -275,6 +275,10 @@ function AskRosie({ p }: { p: Patient }) {
   const list = clinicianQuestionsOf(p).reverse();
   return (
     <Panel title={`Ask ${p.preferredName} a question`}>
+      <label className="mb-3 flex items-center gap-2 bg-card px-3 py-2 text-sm font-semibold">
+        <input type="checkbox" className="size-4" checked={!!p.shortCall} onChange={(e) => void care.setShortCall(p.id, e.target.checked)} />
+        Short call — Rosie only says hello and asks these questions (no sleep, meals, mood… questions)
+      </label>
       <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI. Each question gets its own graph and table in Graphs above.</p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"

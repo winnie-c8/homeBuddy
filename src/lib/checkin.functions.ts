@@ -17,7 +17,7 @@ const Input = z.object({
 
 export type CheckInSummary = {
   meds: { name: string; taken: "yes" | "no" | "unclear" }[];
-  meals: number;
+  meals: number | null;
   fluids: "good" | "low" | "unknown";
   sleepHours: number | null;
   mood: number | null;
@@ -44,7 +44,7 @@ const schema = {
         properties: { name: { type: "string" }, taken: { type: "string", enum: ["yes", "no", "unclear"] } },
       },
     },
-    meals: { type: "integer", description: "Meals eaten so far today, 0-3" },
+    meals: { type: ["integer", "null"], description: "Meals eaten so far today, 0-3; null if meals were not discussed" },
     fluids: { type: "string", enum: ["good", "low", "unknown"] },
     sleepHours: { type: ["number", "null"] },
     mood: { type: ["integer", "null"], description: "1 (very low) to 5 (very good)" },

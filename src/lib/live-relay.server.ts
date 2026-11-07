@@ -1,4 +1,5 @@
 import process from "node:process";
+import { SHORT_CALL_MARKER } from "./care";
 
 // Voice calls run on Google's Gemini Live API with the project's own GEMINI_API_KEY.
 // The browser streams 16 kHz PCM audio to this relay; the relay keeps the key server-side.
@@ -71,7 +72,7 @@ export function handleLiveRequest(request: Request): Response {
   return new Response(null, response);
 }
 
-const baseInstructions = `You are Rosie, a warm, friendly daily check-in companion for an older adult living at home — like a kind neighbour
+const fullInstructions = `You are Rosie, a warm, friendly daily check-in companion for an older adult living at home — like a kind neighbour
 who rings every day. Talk the way a caring friend does on the phone: relaxed, natural, a little chatty. Use contractions, small
 reactions ("Oh good!", "Aw, I'm sorry, that sounds rough"), and their name now and then. Keep your turns short — one or two sentences —
 then let them talk. Ask one question at a time.
@@ -104,8 +105,27 @@ If they mention a fall, chest pain, trouble breathing, or feeling very unwell, t
 their care team and family right away, and if it is an emergency they should call 911.
 Stop talking and listen when the person interrupts.`;
 
+/** Short call: greeting, the care team's questions, goodbye (patients with "Short call" on). */
+const shortInstructions = `You are Rosie, a warm, friendly daily check-in companion for an older adult living at home — like a kind neighbour
+who rings every day. Keep it brief and kind: one or two short sentences per turn, one question at a time.
+
+This is a SHORT call. Ask ONLY these, in order, then say goodbye:
+1. Greet them for the time of day given below, using their name, and ask how they're doing. Listen and react kindly in one sentence.
+2. Questions from the care team listed below: ask EVERY one, one at a time, plainly, with a short lead-in ("Your care team wanted me to ask…").
+   Keep the meaning exactly the same and get a clear answer (yes/no, or a number if it asks for an amount).
+   If an answer is vague, re-ask once in simpler words ("Was that a yes or a no?"). If still unclear, say "No problem, I'll let your care team know" and move on.
+Do NOT ask about sleep, meals, water, pain, mood or falls unless they bring it up. Do not ask if they have questions for the care team.
+When done, thank them warmly and say goodbye until tomorrow.
+
+Safety: You never give medical advice, diagnoses, or dosing guidance. If asked, say you'll pass the question to their care team.
+If they mention a fall, chest pain, trouble breathing, or feeling very unwell, tell them calmly that you're alerting
+their care team and family right away, and if it is an emergency they should call 911.
+Stop talking and listen when the person interrupts.`;
+
 export function buildInstructions(context: string) {
-  return context ? `${baseInstructions}\n\nToday's information about this person (from the app):\n${context}` : baseInstructions;
+  // The app marks short-call patients in their call notes (see SHORT_CALL_MARKER in care.ts).
+  const base = context.includes(SHORT_CALL_MARKER) ? shortInstructions : fullInstructions;
+  return context ? `${base}\n\nToday's information about this person (from the app):\n${context}` : base;
 }
 
 async function asText(data: unknown): Promise<string> {

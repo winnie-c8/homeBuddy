@@ -84,7 +84,7 @@ function SeniorPage() {
         const said = transcript.filter((r) => r.role === "user").map((r) => r.text.trim()).join(" ");
         return {
           meds: patient.meds.map((m) => ({ name: m.name, taken: "unclear" as const })),
-          meals: 0, fluids: "unknown", sleepHours: null, mood: null, pain: null, fall: false,
+          meals: null, fluids: "unknown", sleepHours: null, mood: null, pain: null, fall: false,
           urgent: [], questions: [], answers: [],
           summary: `Automatic summary unavailable. ${patient.preferredName} said: "${said.slice(0, 600)}"`,
         };

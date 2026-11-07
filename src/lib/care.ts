@@ -11,7 +11,7 @@ export type CheckIn = {
   date: string; // ISO
   answered: boolean;
   meds: { name: string; taken: Taken }[];
-  meals: number; // 0-3
+  meals: number | null; // 0-3; null = not asked
   fluids: "good" | "low" | "unknown";
   sleepHours: number | null;
   mood: number | null; // 1-5
@@ -26,6 +26,12 @@ export type CheckIn = {
 
 /** What the AI heard for a yes/no question. It never decides whether that is a concern. */
 export type YesNo = "yes" | "no" | "unclear";
+/**
+ * The first line of Rosie's call notes for a short-call patient. The voice relay looks for it and
+ * uses the short script: greet, ask the care team's questions, goodbye. Everyone else gets the full check-in.
+ */
+export const SHORT_CALL_MARKER = "Call length: SHORT";
+
 /** A care-team question's flag rule: flag when the answer is this. No rule = just record it. */
 export type FlagIf = "yes" | "no";
 export type QuestionAnswer = {
@@ -172,6 +178,8 @@ export type Patient = {
   /** Contact ids the senior has chosen to share their information with. */
   sharedWith: string[];
   checkIns: CheckIn[];
+  /** Short call: Rosie only greets and asks the care team's questions (set by the clinician). */
+  shortCall?: boolean | undefined;
 };
 
 export type CareState = {
@@ -213,7 +221,7 @@ export function findings(c: CheckIn, name = "Patient"): Finding[] {
   if (unsure.length) add("med_unclear", "yellow", `Couldn't confirm dose: ${unsure.join(", ")}`, `We couldn't confirm ${name}'s medication`);
   if (c.mood !== null && c.mood <= 2) add("mood_low", "yellow", `Mood ${c.mood}/5 (low)`, `${name}'s mood is low today`);
   if (c.sleepHours !== null && c.sleepHours < 5) add("sleep_short", "yellow", `Slept ${c.sleepHours} h (under 5 h)`, `${name} slept poorly`);
-  if (c.meals < 2) add("meals_low", "yellow", `${c.meals} meal${c.meals === 1 ? "" : "s"} so far (under 2)`, `${name} is eating less today`);
+  if (c.meals !== null && c.meals < 2) add("meals_low", "yellow", `${c.meals} meal${c.meals === 1 ? "" : "s"} so far (under 2)`, `${name} is eating less today`);
   if (c.fluids === "low") add("fluids_low", "yellow", "Low fluids", `${name} isn't drinking much`);
   for (const a of (c.answers ?? []).filter((x) => x.flagged)) {
     const q = a.question.trim();
@@ -570,6 +578,7 @@ export function callContext(p: Patient, questions: Question[], now: Date = new D
   const time = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   const day = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const lines = [
+    ...(p.shortCall ? [SHORT_CALL_MARKER] : []),
     `Right now it is ${time} on ${day} for them. Open with "${greetingFor(now)}, ${p.preferredName}!"`,
     `Name: ${p.name} (call them ${p.preferredName}), age ${p.age}.`,
     `Medications to confirm today: ${p.meds.map((m) => `${m.name} ${m.dose} (${m.time})`).join("; ")}.`,
@@ -580,7 +589,8 @@ export function callContext(p: Patient, questions: Question[], now: Date = new D
   const answers = questions.filter((q) => q.patientId === p.id && q.answer && !q.deliveredAt);
   if (answers.length)
     lines.push(`Answers from the care team to share: ${answers.map((q) => `They asked "${q.text}" — ${q.answeredBy} says: ${q.answer}`).join(" ")}`);
-  const fu = followUps(p, now);
+  // Short calls skip the "you mentioned yesterday" follow-ups.
+  const fu = p.shortCall ? [] : followUps(p, now);
   if (fu.length)
     lines.push(
       `Things they mentioned in recent calls — early in the call, gently ask how each is doing now (e.g. "Yesterday you said your head hurt — is it still bothering you?"):\n- ${fu.join("\n- ")}`,
