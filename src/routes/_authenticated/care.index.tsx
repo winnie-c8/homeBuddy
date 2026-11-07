@@ -1,15 +1,16 @@
 import { requireRole } from "@/lib/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { BellRing, MessageCircleQuestion } from "lucide-react";
+import { BellRing, CheckCircle2, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Loading } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import swirl from "@/assets/care-swirl.svg";
 import { JoinPatientCard } from "@/components/join-patient";
-import { adherence, latestCheckIn, patientStatus, type Status } from "@/lib/care";
+import { adherence, latestCheckIn, patientStatus, type Alert, type Status } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/care/")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
@@ -32,6 +33,10 @@ function CareDashboard() {
   const state = useCare();
   const { account } = Route.useRouteContext();
   const [addOpen, setAddOpen] = useState(false);
+  const [resolving, setResolving] = useState<Alert | null>(null);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [resolveError, setResolveError] = useState("");
   if (!state) return <Loading />;
   const patients = [...state.patients].sort((a, b) => order[patientStatus(a)] - order[patientStatus(b)]);
   const counts = { red: 0, yellow: 0, green: 0 } as Record<Status, number>;
