@@ -280,10 +280,6 @@ function AskRosie({ p }: { p: Patient }) {
   const list = clinicianQuestionsOf(p).reverse();
   return (
     <Panel title={`Ask ${p.preferredName} a question`}>
-      <label className="mb-3 flex items-center gap-2 bg-card px-3 py-2 text-sm font-semibold">
-        <input type="checkbox" className="size-4" checked={!!p.shortCall} onChange={(e) => void care.setShortCall(p.id, e.target.checked)} />
-        Short call — Rosie only says hello and asks these questions (no sleep, meals, mood… questions)
-      </label>
       <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI. Each question gets its own graph and table in Graphs above.</p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"
@@ -370,7 +366,7 @@ function AskRosie({ p }: { p: Patient }) {
               {q.answer ? (
                 <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
               ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Waiting — Rosie will ask on the next call</p>
+                <p className="mt-2 text-sm text-muted-foreground">Waiting; Rosie will ask on the next call</p>
               )}
             </div>
             {(everyDaysOf(q) >= 1 || !q.answer) && (
@@ -423,7 +419,7 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
       <div className="bg-card p-5">
         {header}
         <div className="flex h-32 items-center justify-center border-2 border-dashed border-border text-sm text-muted-foreground">
-          {q.kind === "number" ? `Graph: ${q.unit || "amount"} per day${q.below !== undefined ? `, flag line at ${q.below}` : ""}${q.above !== undefined ? `, flag line at ${q.above}` : ""}` : "Graph: one bar per day (green = fine, red = flagged)"} — fills in after the first call
+          {q.kind === "number" ? `Graph: ${q.unit || "amount"} per day${q.below !== undefined ? `, flag line at ${q.below}` : ""}${q.above !== undefined ? `, flag line at ${q.above}` : ""}` : "Graph: one bar per day (green = fine, red = flagged)"}; fills in after the first call
         </div>
       </div>
     );
