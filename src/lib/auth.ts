@@ -36,11 +36,7 @@ export async function getAccount(): Promise<Account | null> {
 }
 
 /** Sends someone to their own home page when they open a page meant for another role. */
-// TEMPORARY (testing): lets any signed-in account open every role's pages. Set to false before launch.
-export const PREVIEW_ALL_PAGES = true;
-
 export function requireRole(account: Account, role: AppRole) {
-  if (PREVIEW_ALL_PAGES) return;
   if (account.role !== role) throw redirect({ to: roleHome(account.role) });
 }
 
