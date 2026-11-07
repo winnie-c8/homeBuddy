@@ -4,12 +4,12 @@ import { useState } from "react";
 import { format } from "date-fns";
 import type React from "react";
 import { ArrowLeft, ChevronDown, Phone, Plus, Send, Trash2, AlertTriangle } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
-import { clinicianQuestions, clinicianQuestionsOf, everyDaysOf, frequencyLabel } from "@/lib/clinician-questions";
+import { clinicianQuestions, clinicianQuestionsOf, everyDaysOf, frequencyLabel, type ClinicianQuestion } from "@/lib/clinician-questions";
 import { care, useCare } from "@/lib/care-store";
 import { questionHistory, checkInStatus, findings, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
 
@@ -328,7 +328,7 @@ function AskRosie({ p }: { p: Patient }) {
         <label className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm">
           Turns red after
           <Input className="h-8 w-14 rounded-none" type="number" min={1} value={redAfter} onChange={(e) => setRedAfter(e.target.value)} placeholder="–" />
-          in a row
+          days in a row
           <span className="text-muted-foreground">
             {!hasRule ? "(set a flag rule first)" : redAfter === "1" ? "(right away)" : !redAfter ? "(blank = never)" : ""}
           </span>
@@ -347,12 +347,12 @@ function AskRosie({ p }: { p: Patient }) {
           <li key={q.id} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0">
             <div>
               <p className="text-lg">“{q.text}”</p>
-              <AnswerDots p={p} question={q.text} />
+              <QuestionGraph p={p} q={q} />
               <p className="text-xs text-muted-foreground">
                 {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {frequencyLabel(q)} · {q.kind === "number"
                   ? `Number${q.unit ? ` (${q.unit})` : ""} · ${[q.below !== undefined ? `flag below ${q.below}` : "", q.above !== undefined ? `flag above ${q.above}` : ""].filter(Boolean).join(", ") || "no flag"}`
                   : q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
-                {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} in a row` : "Never red"}`}
+                {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} days in a row` : "Never red"}`}
               </p>
               {q.answer ? (
                 <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
@@ -370,30 +370,63 @@ function AskRosie({ p }: { p: Patient }) {
   );
 }
 
-/** Yes/no history for one clinician question: one dot per time it was asked, newest on the right. */
-function AnswerDots({ p, question }: { p: Patient; question: string }) {
-  const h = questionHistory(p, question).slice(-10);
-  if (!h.length) return null;
+/**
+ * One graph per clinician question, one bar/point per day it was answered.
+ * Yes/no: a bar per day (green = fine, red = flagged, grey = unclear).
+ * Number: the amount per day with the clinician's limits drawn as dashed lines.
+ */
+function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
+  const h = questionHistory(p, q.text).slice(-14);
+  if (!h.length) return <p className="my-2 text-xs text-muted-foreground">No answers yet — the graph appears after the first call.</p>;
   const last3 = h.slice(-3);
   const fine = last3.filter((x) => !x.flagged).length;
-  const dot = (x: (typeof h)[number]) =>
-    x.answer === "unclear" ? "border-2 border-dashed border-foreground/50" : x.flagged ? "bg-status-red" : "bg-status-green";
+  const colour = (x: (typeof h)[number]) => (x.answer === "unclear" && x.value === null ? "var(--muted-foreground)" : x.flagged ? "var(--status-red)" : "var(--status-green)");
+  const rows = h.map((x) => ({
+    day: format(new Date(x.date), "EEE d"),
+    v: q.kind === "number" ? x.value : 1,
+    label: q.kind === "number" ? (x.value ?? "unclear") : x.answer,
+    said: x.said,
+    fill: colour(x),
+  }));
+  const tip = ({ active, payload }: { active?: boolean | undefined; payload?: readonly { payload?: (typeof rows)[number] }[] | undefined }) => {
+      const r = active ? payload?.[0]?.payload : undefined;
+      return r ? (
+        <div className="border border-border bg-card px-3 py-2 text-xs shadow">
+          <p className="font-bold">{r.day}: {String(r.label)}{q.kind === "number" && q.unit && typeof r.label === "number" ? ` ${q.unit}` : ""}</p>
+          {r.said && <p>“{r.said}”</p>}
+        </div>
+      ) : null;
+    };
   return (
-    <div className="my-2">
-      <div className="flex items-end gap-2">
-        {h.map((x, i) => (
-          <div key={i} className="flex flex-col items-center gap-1" title={`${format(new Date(x.date), "MMM d")}: ${x.answer}${x.said ? ` — "${x.said}"` : ""}`}>
-            {x.value !== null ? (
-              <span className={`px-1 text-xs font-bold ${x.flagged ? "bg-status-red text-primary-foreground" : "bg-status-green text-primary-foreground"}`}>{x.value}</span>
-            ) : (
-              <span className={`block size-4 rounded-full ${dot(x)}`} />
-            )}
-            <span className="text-[10px] text-muted-foreground">{format(new Date(x.date), "EEE")}</span>
-          </div>
-        ))}
+    <div className="my-3 bg-background p-3">
+      <div className="h-32">
+        <ResponsiveContainer width="100%" height="100%">
+          {q.kind === "number" ? (
+            <LineChart data={rows} margin={{ left: -20, right: 8, top: 6 }}>
+              <CartesianGrid stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+              <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} allowDecimals={false} />
+              <Tooltip content={tip} />
+              {q.below !== undefined && <ReferenceLine y={q.below} stroke="var(--status-red)" strokeDasharray="4 4" label={{ value: `flag below ${q.below}`, fontSize: 10, fill: "var(--status-red)", position: "insideBottomRight" }} />}
+              {q.above !== undefined && <ReferenceLine y={q.above} stroke="var(--status-red)" strokeDasharray="4 4" label={{ value: `flag above ${q.above}`, fontSize: 10, fill: "var(--status-red)", position: "insideTopRight" }} />}
+              <Line type="monotone" dataKey="v" stroke="var(--chart-1)" strokeWidth={2.5} connectNulls dot={(d: { cx?: number; cy?: number; index?: number }) => (
+                <circle key={d.index} cx={d.cx} cy={d.cy} r={5} fill={rows[d.index ?? 0]?.fill} stroke="none" />
+              )} />
+            </LineChart>
+          ) : (
+            <BarChart data={rows} margin={{ left: -20, right: 8, top: 6 }}>
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+              <YAxis hide domain={[0, 1]} />
+              <Tooltip content={tip} cursor={{ fill: "var(--muted)" }} />
+              <Bar dataKey="v" radius={[4, 4, 0, 0]} label={{ position: "insideTop", fontSize: 11, fill: "white", formatter: (_: unknown, __: unknown, i: number) => rows[i]?.label }}>
+                {rows.map((r, i) => <Cell key={i} fill={r.fill} />)}
+              </Bar>
+            </BarChart>
+          )}
+        </ResponsiveContainer>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Fine {fine} of the last {last3.length} time{last3.length === 1 ? "" : "s"} · green = fine, red = flagged, dashed = unclear
+        Fine {fine} of the last {last3.length} time{last3.length === 1 ? "" : "s"} · green = fine, red = flagged, grey = unclear
       </p>
     </div>
   );

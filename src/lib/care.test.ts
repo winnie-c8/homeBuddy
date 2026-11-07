@@ -233,7 +233,7 @@ describe("yellow that keeps happening turns red (#10)", () => {
     expect(patientStatus(two)).toBe("yellow");
     const three = { ...p, checkIns: [...two.checkIns, dialysis(7, "no", 3)] };
     expect(patientStatus(three)).toBe("red");
-    expect(escalations(three)[0]!.clinician).toBe('"Did you do your dialysis today?" flagged 3 times in a row (last answer: no)');
+    expect(escalations(three)[0]!.clinician).toBe('"Did you do your dialysis today?" flagged 3 days in a row (last answer: no)');
   });
   it("a fine answer resets the count", () =>
     expect(patientStatus({ ...p, checkIns: [dialysis(4, "no", 3), dialysis(5, "yes", 3), dialysis(6, "no", 3), dialysis(7, "no", 3)] })).toBe("yellow"));
@@ -264,6 +264,6 @@ describe("number questions", () => {
   it("turns red after N low days in a row", () => {
     const p = { ...createSampleState().patients.find((x) => x.id === "margaret")!, checkIns: [] as CheckIn[] };
     const day = (d: number, n: number): CheckIn => ({ ...ok, id: `w${d}`, date: new Date(2026, 10, d, 10).toISOString(), answers: checkAnswers([{ ...water, redAfter: 2 }], heard(String(n), n)) });
-    expect(escalations({ ...p, checkIns: [day(6, 3), day(7, 4)] })[0]!.clinician).toBe('"How many glasses of water today?" flagged 2 times in a row (last answer: 4 glasses)');
+    expect(escalations({ ...p, checkIns: [day(6, 3), day(7, 4)] })[0]!.clinician).toBe('"How many glasses of water today?" flagged 2 days in a row (last answer: 4 glasses)');
   });
 });

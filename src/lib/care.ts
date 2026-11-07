@@ -309,8 +309,8 @@ export function escalations(p: Patient): Finding[] {
       out.push({
         key: `question_streak:${a.question}`,
         status: "red",
-        clinician: `"${a.question}" flagged ${n} times in a row (last answer: ${a.kind === "number" && typeof a.value === "number" ? `${a.value}${a.unit ? ` ${a.unit}` : ""}` : a.answer})`,
-        family: `${p.preferredName}'s answer to "${a.question}" has needed attention ${n} times in a row`,
+        clinician: `"${a.question}" flagged ${n} days in a row (last answer: ${a.kind === "number" && typeof a.value === "number" ? `${a.value}${a.unit ? ` ${a.unit}` : ""}` : a.answer})`,
+        family: `${p.preferredName}'s answer to "${a.question}" has needed attention ${n} days in a row`,
       });
   }
   return out;
