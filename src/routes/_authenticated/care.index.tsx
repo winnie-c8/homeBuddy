@@ -10,7 +10,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import careCircles from "@/assets/care-circles.svg";
 import { JoinPatientCard } from "@/components/join-patient";
-import { adherence, alertStage, latestCheckIn, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type Status } from "@/lib/care";
+import { adherence, alertStage, latestCheckIn, patientStatus, questionLabel, questionSummary, sortAlertsForClinician, waitingFor, type Alert, type Status } from "@/lib/care";
+import { clinicianQuestionsOf } from "@/lib/clinician-questions";
 
 export const Route = createFileRoute("/_authenticated/care/")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
@@ -147,7 +148,14 @@ function CareDashboard() {
                   </p>
                   <p className="mt-1">{alert?.message ?? last?.summary ?? "No check-ins yet."}</p>
                   <p className="mt-2 flex items-center gap-3 text-sm">
-                    <span><span className="font-bold">{meds ?? "—"}%</span> meds</span>
+                    {p.shortCall ? (
+                      clinicianQuestionsOf(p).map((q) => {
+                        const { fine, total } = questionSummary(p, q.text);
+                        return <span key={q.id}><span className="font-bold">{fine}/{total}</span> {questionLabel(q.text).toLowerCase()}</span>;
+                      })
+                    ) : (
+                      <span><span className="font-bold">{meds ?? "—"}%</span> meds</span>
+                    )}
                     {qs > 0 && <span className="inline-flex items-center gap-1"><MessageCircleQuestion className="size-4" />{qs} question{qs > 1 ? "s" : ""}</span>}
                   </p>
                 </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SHORT_CALL_MARKER, callContext, alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, isNumberFlagged, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
+import { SHORT_CALL_MARKER, callContext, questionLabel, alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, isNumberFlagged, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -277,4 +277,13 @@ describe("short call setting", () => {
   const p = createSampleState().patients.find((x) => x.id === "margaret")!;
   it("is off by default: full call notes", () => expect(callContext(p, [])).not.toContain(SHORT_CALL_MARKER));
   it("marks short-call patients for the voice relay", () => expect(callContext({ ...p, shortCall: true }, []).split("\n")[0]).toBe(SHORT_CALL_MARKER));
+});
+
+describe("question labels for summary boxes", () => {
+  it.each([
+    ["Did you take your medications today?", "Took medications"],
+    ["Did you do your dialysis today?", "Did dialysis"],
+    ["Did you check your blood pressure today?", "Checked blood pressure"],
+    ["How many glasses of water did you drink today?", "How many glasses of water did you drink today"],
+  ])("%s -> %s", (q, label) => expect(questionLabel(q)).toBe(label));
 });

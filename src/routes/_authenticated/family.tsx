@@ -7,7 +7,8 @@ import { useCare } from "@/lib/care-store";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { JoinPatientCard } from "@/components/join-patient";
-import { adherence, alertStage, followUpForFamily, latestCheckIn, patientStatus } from "@/lib/care";
+import { adherence, alertStage, followUpForFamily, latestCheckIn, patientStatus, questionLabel, questionSummary } from "@/lib/care";
+import { clinicianQuestionsOf } from "@/lib/clinician-questions";
 import familyBackground from "@/assets/family-background.svg.asset.json";
 
 export const Route = createFileRoute("/_authenticated/family")({
@@ -74,9 +75,19 @@ function FamilyPage() {
       </div>
 
       <section className="mt-8 grid gap-5 sm:grid-cols-3 sm:gap-8" aria-label="Seven-day averages">
-        <Stat label="Medications" value={`${adherence(week) ?? "—"}%`} />
-        <Stat label="Average mood" value={avg(week.map((c) => c.mood))} suffix="/5" />
-        <Stat label="Average sleep" value={avg(week.map((c) => c.sleepHours))} suffix=" h" />
+        {p.shortCall ? (
+          // Short calls only ask the doctor's questions, so show those instead of mood/sleep averages.
+          clinicianQuestionsOf(p).map((q) => {
+            const { fine, total } = questionSummary(p, q.text);
+            return <Stat key={q.id} label={questionLabel(q.text)} value={total ? `${fine} of ${total}` : "—"} suffix=" days" />;
+          })
+        ) : (
+          <>
+            <Stat label="Medications" value={`${adherence(week) ?? "—"}%`} />
+            <Stat label="Average mood" value={avg(week.map((c) => c.mood))} suffix="/5" />
+            <Stat label="Average sleep" value={avg(week.map((c) => c.sleepHours))} suffix=" h" />
+          </>
+        )}
       </section>
 
       <section className="mt-10 bg-family-plan px-6 py-7 text-family-on-green sm:px-10">

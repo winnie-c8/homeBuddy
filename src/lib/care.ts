@@ -335,6 +335,19 @@ export function questionHistory(p: Patient, question: string): { date: string; a
     );
 }
 
+/** How many of the last few answers to one doctor question were fine (for short-call patients' summary boxes). */
+export function questionSummary(p: Patient, question: string, last = 7): { fine: number; total: number } {
+  const h = questionHistory(p, question).slice(-last);
+  return { fine: h.filter((x) => !x.flagged).length, total: h.length };
+}
+
+/** A short label for a doctor question: "Did you take your medications today?" -> "Took medications". */
+export function questionLabel(text: string): string {
+  const m = text.match(/^did you (take|do|check|eat|drink|go to|have) (your |the )?(.+?)( today)?\??$/i);
+  if (m) return `${{ take: "Took", do: "Did", check: "Checked", eat: "Ate", drink: "Drank", "go to": "Went to", have: "Had" }[m[1]!.toLowerCase()] ?? m[1]} ${m[3]}`;
+  return text.replace(/\?$/, "");
+}
+
 /** A patient's colour is the worst colour of their latest day, so a later "I'm fine" call can't hide a fall. */
 export function patientStatus(p: Patient): Status {
   const day = latestDayCheckIns(p);
