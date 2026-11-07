@@ -82,7 +82,7 @@ function SeniorPage() {
         return {
           meds: patient.meds.map((m) => ({ name: m.name, taken: "unclear" as const })),
           meals: 0, fluids: "unknown", sleepHours: null, mood: null, pain: null, fall: false,
-          urgent: [], questions: [],
+          urgent: [], questions: [], answers: [],
           summary: `Automatic summary unavailable. ${patient.preferredName} said: "${said.slice(0, 600)}"`,
         };
       })
@@ -108,7 +108,7 @@ function SeniorPage() {
           s.questions,
         );
       }).then(async () => {
-        const answers = lastSummary.current?.clinicianAnswers ?? [];
+        const answers = lastSummary.current?.answers ?? [];
         if (answers.length) await clinicianQuestions.saveAnswers(PATIENT_ID, answers).catch(() => {});
         setResult(lastSummary.current);
         setPhase("done");

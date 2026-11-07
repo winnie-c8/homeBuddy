@@ -26,14 +26,14 @@ export type CheckInSummary = {
   urgent: string[];
   questions: string[];
   summary: string;
-  /** Senior's answers to questions the care team asked Rosie to put to them. */
-  clinicianAnswers?: { question: string; said: string }[];
+  /** One entry per care-team question: the senior's own words, and whether the answer is a concern. */
+  answers: { question: string; said: string; concern: boolean }[];
 };
 
 const schema = {
   type: "object",
   additionalProperties: false,
-  required: ["meds", "meals", "fluids", "sleepHours", "mood", "pain", "fall", "urgent", "questions", "summary"],
+  required: ["meds", "meals", "fluids", "sleepHours", "mood", "pain", "fall", "urgent", "questions", "summary", "answers"],
   properties: {
     meds: {
       type: "array",
@@ -53,14 +53,15 @@ const schema = {
     urgent: { type: "array", items: { type: "string" }, description: "Urgent symptoms mentioned, e.g. chest pain" },
     questions: { type: "array", items: { type: "string" }, description: "Questions the senior wants passed to the care team" },
     summary: { type: "string", description: "2-3 plain sentences for the care team" },
-    clinicianAnswers: {
+    answers: {
       type: "array",
-      description: "For each care-team question, what the senior answered in their own words; empty 'said' if not asked/answered",
+      description:
+        "One entry per care-team question, question copied exactly. 'said' = the senior's own words (empty if not answered). 'concern' = true if the answer suggests a problem the care team should follow up on.",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["question", "said"],
-        properties: { question: { type: "string" }, said: { type: "string" } },
+        required: ["question", "said", "concern"],
+        properties: { question: { type: "string" }, said: { type: "string" }, concern: { type: "boolean" } },
       },
     },
   },
@@ -86,7 +87,7 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
         contents: [
           {
             role: "user",
-            parts: [{ text: `Senior's name: ${data.name || "unknown"}\nExpected medications: ${data.meds.join(", ") || "none"}\nCare team questions (copy each exactly into clinicianAnswers): ${(data.clinicianQuestions ?? []).join(" | ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
+            parts: [{ text: `Senior's name: ${data.name || "unknown"}\nExpected medications: ${data.meds.join(", ") || "none"}\nCare team questions (copy each exactly into answers): ${(data.clinicianQuestions ?? []).join(" | ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
           },
         ],
         generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema },
@@ -110,7 +111,8 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
       const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
       const out = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
       try {
-        return JSON.parse(out) as CheckInSummary;
+        const parsed = JSON.parse(out) as CheckInSummary;
+        return { ...parsed, answers: parsed.answers ?? [] };
       } catch {
         console.error("Gemini summary bad JSON", model);
       }
