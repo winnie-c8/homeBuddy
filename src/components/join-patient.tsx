@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { joinPatient } from "@/lib/care-store";
 
-export function JoinPatientCard({ kind }: { kind: "family" | "care_team" }) {
+export function JoinPatientCard({ kind, onDone, className }: { kind: "family" | "care_team"; onDone?: () => void; className?: string }) {
   const [code, setCode] = useState("");
   const [relation, setRelation] = useState("");
   const [busy, setBusy] = useState(false);
@@ -18,6 +18,7 @@ export function JoinPatientCard({ kind }: { kind: "family" | "care_team" }) {
       toast.success("You're now connected.");
       setCode("");
       setRelation("");
+      onDone?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "That code didn't work");
     } finally {
@@ -26,7 +27,7 @@ export function JoinPatientCard({ kind }: { kind: "family" | "care_team" }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-3 rounded-3xl border border-border bg-card p-5">
+    <form onSubmit={submit} className={className ?? "mt-6 space-y-3 rounded-3xl border border-border bg-card p-5"}>
       <h3 className="font-display text-lg font-semibold">{kind === "family" ? "Connect to your loved one" : "Add a patient"}</h3>
       <p className="text-sm text-muted-foreground">Enter the 6-character code shown on their homeBuddy page.</p>
       <div className="space-y-1">

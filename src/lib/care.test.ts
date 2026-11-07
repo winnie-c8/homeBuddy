@@ -159,12 +159,12 @@ describe("follow-up (#7)", () => {
     expect(followUpForFamily(base)).toBe("The care team has been told");
   });
   it("on it shows who is handling it", () => {
-    const a = { ...base, followUp: { status: "on_it" as const, by: "Dr. Patel", at: base.at } };
+    const a = { ...base, onItBy: "Dr. Patel", onItAt: base.at };
     expect(alertStage(a)).toBe("on_it");
     expect(followUpForFamily(a)).toBe("Dr. Patel is on it");
   });
   it("resolved shows the note to family", () => {
-    const a = { ...base, followUp: { status: "resolved" as const, by: "Dr. Patel", at: base.at, note: "Called, booked dialysis tomorrow" } };
+    const a = { ...base, onItBy: "Dr. Patel", acknowledged: true, resolution: "Called, booked dialysis tomorrow", resolvedBy: "Dr. Patel", resolvedAt: base.at };
     expect(alertStage(a)).toBe("resolved");
     expect(followUpForFamily(a)).toBe("Resolved by Dr. Patel: Called, booked dialysis tomorrow");
   });

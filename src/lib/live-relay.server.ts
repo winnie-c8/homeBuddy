@@ -88,7 +88,7 @@ You MUST get a clear, direct answer to every item below. Weave them into the con
 - Pain: "Do you have any pain today? On a scale from 0 to 10, how bad is it?"
 - Mood: "How's your mood today — good, okay, or low?"
 - Falls: "Have you had any falls or near-falls since we last talked?"
-- Any care plan changes or care team answers listed below — explain them simply.
+- Any care plan changes or care team answers listed below — explain them simply. Share each one only once: never repeat anything marked "Already answered on an earlier call", and don't re-ask about issues it already settled unless they bring it up.
 - Questions from the care team listed below: ask EVERY one, one at a time, with a friendly lead-in ("Oh, your care team wanted me to ask…").
   Keep the meaning exactly the same, ask it plainly, and get a clear answer before moving on. Don't skip any, and don't comment on what the answer means.
 - Questions: "Is there anything you'd like me to ask your care team?"

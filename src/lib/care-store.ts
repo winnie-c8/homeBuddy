@@ -126,13 +126,20 @@ export const care = {
       return { ...b, alerts: [{ id: uid(), patientId, at: new Date().toISOString(), level: "urgent", message, notified }, ...b.alerts] };
     });
   },
-  /** Clinician's follow-up on an alert: "on_it", then "resolved" with a short note. */
-  async followUp(patientId: string, id: string, status: "on_it" | "resolved", by: string, note?: string) {
-    const followUp = { status, by, at: new Date().toISOString(), ...(note?.trim() ? { note: note.trim() } : {}) };
-    await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, followUp } : a)) }));
+  /** Clinician picks up an alert ("On it"); family see who is handling it. */
+  async markOnIt(patientId: string, id: string, by: string) {
+    await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, onItBy: by, onItAt: new Date().toISOString() } : a)) }));
   },
-  async acknowledgeAlert(patientId: string, id: string) {
-    await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)) }));
+  /** Checking an alert off needs a note saying how the situation was resolved. */
+  async acknowledgeAlert(patientId: string, id: string, resolution: string, by: string) {
+    const note = resolution.trim();
+    if (!note) throw new Error("Write how the situation was resolved before marking it handled.");
+    await update(patientId, (b) => ({
+      ...b,
+      alerts: b.alerts.map((a) =>
+        a.id === id ? { ...a, acknowledged: true, resolution: note, resolvedBy: by, resolvedAt: new Date().toISOString() } : a,
+      ),
+    }));
   },
   async answerQuestion(patientId: string, id: string, answer: string, by: string) {
     await update(patientId, (b) => ({

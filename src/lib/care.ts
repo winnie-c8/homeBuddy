@@ -81,16 +81,20 @@ export type Alert = {
   notified: string[];
   /** Older "Mark handled" flag; counts as resolved. */
   acknowledged?: boolean;
-  /** The clinician's follow-up: On it → Resolved (with a short note). */
-  followUp?: FollowUp | undefined;
+  /** How the care team resolved it — required before an alert can be marked handled. */
+  resolution?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
+  /** The clinician has picked it up ("On it") before resolving it. */
+  onItBy?: string | undefined;
+  onItAt?: string | undefined;
 };
 
-export type FollowUp = { status: "on_it" | "resolved"; by: string; at: string; note?: string | undefined };
 export type AlertStage = "new" | "on_it" | "resolved";
 
 export function alertStage(a: Alert): AlertStage {
-  if (a.followUp?.status === "resolved" || a.acknowledged) return "resolved";
-  return a.followUp?.status === "on_it" ? "on_it" : "new";
+  if (a.acknowledged || a.resolution) return "resolved";
+  return a.onItBy ? "on_it" : "new";
 }
 
 /** "3 h", "25 min", "2 days": how long an alert has waited for a response. */
@@ -103,10 +107,9 @@ export function waitingFor(a: Alert, now: Date = new Date()): string {
 
 /** What family see about the care team's response. */
 export function followUpForFamily(a: Alert): string {
-  const f = a.followUp;
-  if (f?.status === "resolved") return `Resolved by ${f.by}${f.note ? `: ${f.note}` : ""}`;
+  if (a.resolution) return `Resolved by ${a.resolvedBy ?? "the care team"}: ${a.resolution}`;
   if (a.acknowledged) return "Seen by the care team";
-  if (f?.status === "on_it") return `${f.by} is on it`;
+  if (a.onItBy) return `${a.onItBy} is on it`;
   return "The care team has been told";
 }
 
