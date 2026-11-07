@@ -56,6 +56,7 @@ homeBuddy connects seniors, clinicians and families through a simple daily voice
 | Backend & database | Supabase (PostgreSQL with Row Level Security, Auth with role separation) |
 | Charts | Recharts |
 | Testing | Vitest, React Testing Library |
+| Website Design | Figma |
 
 ## 🚀 Getting Started
 
