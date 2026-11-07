@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
+import { clinicianQuestions, clinicianQuestionsOf } from "@/lib/clinician-questions";
 import { care, useCare } from "@/lib/care-store";
 import { checkInStatus, patientStatus, type CheckIn, type Patient } from "@/lib/care";
 
@@ -57,6 +58,8 @@ function PatientPage() {
         <Trend title="Sleep (hours)" data={checkIns} pick={(c) => c.sleepHours} domain={[0, 10]} color="var(--chart-3)" />
         <Trend title="Appetite (meals/day)" data={checkIns} pick={(c) => (c.answered ? c.meals : null)} domain={[0, 3]} color="var(--chart-4)" />
       </section>
+
+      <AskRosie p={p} />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <section className="rounded-3xl border border-border bg-card p-6">
@@ -205,6 +208,50 @@ function PlanEditor({ p }: { p: Patient }) {
           <ul className="mt-1 list-disc pl-5">{pending.map((c) => <li key={c.id}>{c.text}</li>)}</ul>
         </div>
       )}
+    </section>
+  );
+}
+
+function AskRosie({ p }: { p: Patient }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const { account } = useRouteContext({ from: "/_authenticated" });
+  const list = clinicianQuestionsOf(p).reverse();
+  return (
+    <section className="mt-8 rounded-3xl border border-border bg-card p-6">
+      <h2 className="text-2xl font-semibold">Ask {p.preferredName} on the next call</h2>
+      <p className="text-sm text-muted-foreground">Rosie will ask these in her own friendly words and bring back the answer.</p>
+      <form
+        className="mt-4 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!text.trim()) return;
+          setBusy(true);
+          clinicianQuestions.add(p.id, text.trim(), account.displayName).then(() => setText("")).finally(() => setBusy(false));
+        }}
+      >
+        <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Has the swelling in your ankles gone down?" />
+        <Button type="submit" disabled={busy || !text.trim()}><Plus /> Add question</Button>
+      </form>
+      <ul className="mt-4 space-y-3">
+        {list.length === 0 && <li className="text-muted-foreground">No questions queued.</li>}
+        {list.map((q) => (
+          <li key={q.id} className="flex items-start justify-between gap-3 rounded-2xl bg-muted p-4">
+            <div>
+              <p className="font-bold">"{q.text}"</p>
+              <p className="text-xs text-muted-foreground">{q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")}</p>
+              {q.answer ? (
+                <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">Waiting — Rosie will ask on the next call</p>
+              )}
+            </div>
+            {!q.answer && (
+              <Button size="icon" variant="ghost" aria-label="Remove question" onClick={() => void clinicianQuestions.remove(p.id, q.id)}><Trash2 /></Button>
+            )}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
