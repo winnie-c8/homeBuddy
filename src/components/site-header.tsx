@@ -27,7 +27,7 @@ export function SiteHeader() {
           <span className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
             <HeartHandshake className="size-5" />
           </span>
-          <span className="font-display text-xl font-semibold">Hearthline</span>
+          <span className="font-display text-xl font-semibold">homeBuddy</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           {account ? (

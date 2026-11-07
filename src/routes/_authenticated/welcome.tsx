@@ -15,10 +15,10 @@ export const Route = createFileRoute("/_authenticated/welcome")({
   },
   head: () => ({
     meta: [
-      { title: "Welcome — Hearthline" },
-      { name: "description", content: "Tell Hearthline whether you're a senior, family member or care team member." },
-      { property: "og:title", content: "Welcome — Hearthline" },
-      { property: "og:description", content: "Choose your Hearthline account type." },
+      { title: "Welcome — homeBuddy" },
+      { name: "description", content: "Tell homeBuddy whether you're a senior, family member or care team member." },
+      { property: "og:title", content: "Welcome — homeBuddy" },
+      { property: "og:description", content: "Choose your homeBuddy account type." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -54,7 +54,7 @@ function Welcome() {
 
   return (
     <main className="mx-auto max-w-xl px-5 pb-24 pt-12">
-      <h1 className="text-4xl font-semibold">Welcome to Hearthline</h1>
+      <h1 className="text-4xl font-semibold">Welcome to homeBuddy</h1>
       <p className="mt-2 text-lg text-muted-foreground">Who are you? You choose this once.</p>
       <div className="mt-8 space-y-3" role="radiogroup" aria-label="Account type">
         {ROLES.map((r) => (

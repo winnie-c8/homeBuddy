@@ -16,9 +16,9 @@ export const Route = createFileRoute("/_authenticated/care/$patientId")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
   head: () => ({
     meta: [
-      { title: "Patient details — Hearthline" },
+      { title: "Patient details — homeBuddy" },
       { name: "description", content: "Trends, flagged risks, questions and care plan for one patient." },
-      { property: "og:title", content: "Patient details — Hearthline" },
+      { property: "og:title", content: "Patient details — homeBuddy" },
       { property: "og:description", content: "Adherence, mood, sleep and appetite trends from daily check-ins." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

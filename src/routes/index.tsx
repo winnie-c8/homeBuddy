@@ -4,9 +4,9 @@ import { Phone, Users, Stethoscope, ShieldCheck, ArrowRight } from "lucide-react
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Hearthline — Stay independent at home, longer" },
+      { title: "homeBuddy — Stay independent at home, longer" },
       { name: "description", content: "A friendly daily AI check-in call connects seniors, families and their care team. No screens or tech skills needed." },
-      { property: "og:title", content: "Hearthline — Stay independent at home, longer" },
+      { property: "og:title", content: "homeBuddy — Stay independent at home, longer" },
       { property: "og:description", content: "Daily AI check-in calls, medication follow-up and safety alerts for seniors and the people who care for them." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -32,7 +32,7 @@ function Index() {
           A friendly voice every morning. <span className="text-accent">Peace of mind</span> for everyone.
         </h1>
         <p className="mt-6 max-w-2xl text-xl leading-relaxed text-muted-foreground">
-          Hearthline calls at the same time each day to check on medications, meals, sleep, pain, mood and falls —
+          homeBuddy calls at the same time each day to check on medications, meals, sleep, pain, mood and falls —
           then keeps family and the care team in the loop.
         </p>
       </section>

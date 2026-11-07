@@ -13,9 +13,9 @@ export const Route = createFileRoute("/_authenticated/family")({
   beforeLoad: ({ context }) => requireRole(context.account, "family"),
   head: () => ({
     meta: [
-      { title: "Family view — Hearthline" },
+      { title: "Family view — homeBuddy" },
       { name: "description", content: "See how your loved one is doing each day and get alerts right away." },
-      { property: "og:title", content: "Family view — Hearthline" },
+      { property: "og:title", content: "Family view — homeBuddy" },
       { property: "og:description", content: "Daily updates and safety alerts for families of seniors living at home." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
