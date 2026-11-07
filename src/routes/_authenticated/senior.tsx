@@ -11,6 +11,7 @@ import { useLiveVoice, type LiveEvent } from "@/hooks/use-live-voice";
 import { care, patientRows, useCare } from "@/lib/care-store";
 import { SeniorSetup } from "@/components/senior-setup";
 import { callContext, checkAnswers, detectUrgent, greetingFor } from "@/lib/care";
+import { settledContext } from "@/lib/call-memory";
 import { clinicianContext, clinicianQuestions, pendingClinicianQuestions } from "@/lib/clinician-questions";
 import { summarizeCheckIn, type CheckInSummary } from "@/lib/checkin.functions";
 
@@ -133,7 +134,7 @@ function SeniorPage() {
     setRows([]);
     setResult(null);
     setPhase("ready");
-    voice.start([callContext(patient, state.questions), clinicianContext(patient)].filter(Boolean).join("\n"));
+    voice.start([callContext(patient, state.questions), settledContext(patient, state.questions), clinicianContext(patient)].filter(Boolean).join("\n"));
   };
 
   const greet = greetingFor(new Date());
