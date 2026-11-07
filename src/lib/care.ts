@@ -20,7 +20,39 @@ export type CheckIn = {
   urgent: string[];
   summary: string;
   source: "voice" | "sample";
+  /** Answers to the care team's questions, already checked against each question's rule. */
+  answers?: QuestionAnswer[];
 };
+
+/** What the AI heard for a yes/no question. It never decides whether that is a concern. */
+export type YesNo = "yes" | "no" | "unclear";
+/** A care-team question's flag rule: flag when the answer is this. No rule = just record it. */
+export type FlagIf = "yes" | "no";
+export type QuestionAnswer = { question: string; said: string; answer: YesNo; flagIf?: FlagIf | undefined; flagged: boolean };
+
+/**
+ * The rule for care-team questions. Deterministic: same answer + same rule = same result.
+ * With a rule, the answer that matches it is flagged, and so is "unclear" (couldn't confirm).
+ */
+export function isAnswerFlagged(answer: YesNo, flagIf: FlagIf | undefined): boolean {
+  if (!flagIf) return false;
+  return answer === "unclear" || answer === flagIf;
+}
+
+/** Match the AI's answers to the questions that were asked, and apply each question's rule. */
+export function checkAnswers(
+  asked: { text: string; flagIf?: FlagIf }[],
+  heard: { question: string; said: string; answer: YesNo }[],
+): QuestionAnswer[] {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+  return asked.map((q) => {
+    const h = heard.find((a) => norm(a.question) === norm(q.text));
+    const said = h?.said.trim() ?? "";
+    // Not asked or no words captured counts as unclear.
+    const answer: YesNo = h && said ? h.answer : "unclear";
+    return { question: q.text, said, answer, flagIf: q.flagIf, flagged: isAnswerFlagged(answer, q.flagIf) };
+  });
+}
 
 export type Question = {
   id: string;
@@ -90,7 +122,8 @@ export function checkInStatus(c: CheckIn | undefined): Status {
     (c.pain ?? 0) >= 4 ||
     c.fluids === "low" ||
     c.meals < 2 ||
-    (c.sleepHours !== null && c.sleepHours < 5)
+    (c.sleepHours !== null && c.sleepHours < 5) ||
+    (c.answers ?? []).some((a) => a.flagged)
   )
     return "yellow";
   return "green";
@@ -124,6 +157,11 @@ export function alertsForCheckIn(p: Patient, c: CheckIn): Omit<Alert, "id">[] {
   if (other.length) out.push({ patientId: p.id, at: c.date, level: "urgent", message: `${p.preferredName} mentioned: ${other.join(", ")}.`, notified: [...family, ...care] });
   const missed = c.meds.filter((m) => m.taken === "no").map((m) => m.name);
   if (missed.length) out.push({ patientId: p.id, at: c.date, level: "warning", message: `Missed dose: ${missed.join(", ")}.`, notified: [...family, ...care] });
+  for (const a of (c.answers ?? []).filter((x) => x.flagged)) {
+    const what = a.answer === "unclear" ? "couldn't confirm an answer" : `answered ${a.answer}`;
+    const quote = a.said ? ` — "${a.said}"` : "";
+    out.push({ patientId: p.id, at: c.date, level: "warning", message: `Care team question "${a.question}": ${what}${quote}`, notified: [...family, ...care] });
+  }
   return out;
 }
 

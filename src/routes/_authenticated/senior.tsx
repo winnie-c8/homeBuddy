@@ -10,7 +10,7 @@ import { Loading } from "@/components/status-badge";
 import { useLiveVoice, type LiveEvent } from "@/hooks/use-live-voice";
 import { care, patientRows, useCare } from "@/lib/care-store";
 import { SeniorSetup } from "@/components/senior-setup";
-import { callContext, detectUrgent, greetingFor } from "@/lib/care";
+import { callContext, checkAnswers, detectUrgent, greetingFor } from "@/lib/care";
 import { clinicianContext, clinicianQuestions, pendingClinicianQuestions } from "@/lib/clinician-questions";
 import { summarizeCheckIn, type CheckInSummary } from "@/lib/checkin.functions";
 
@@ -75,7 +75,8 @@ function SeniorPage() {
     const patient = state?.patients.find((p) => p.id === PATIENT_ID);
     if (!patient) return;
     setPhase("saving");
-    summarize({ data: { transcript, meds: patient.meds.map((m) => m.name), name: patient.name, clinicianQuestions: pendingClinicianQuestions(patient).map((q) => q.text) } })
+    const asked = pendingClinicianQuestions(patient);
+    summarize({ data: { transcript, meds: patient.meds.map((m) => m.name), name: patient.name, clinicianQuestions: asked.map((q) => q.text) } })
       .catch((): CheckInSummary => {
         // AI summary unavailable: still save the call so the care team sees it.
         const said = transcript.filter((r) => r.role === "user").map((r) => r.text.trim()).join(" ");
@@ -104,6 +105,8 @@ function SeniorPage() {
             urgent,
             summary: s.summary,
             source: "voice",
+            // The AI only reports yes/no/unclear; care.ts applies each question's rule.
+            answers: checkAnswers(asked, s.answers ?? []),
           },
           s.questions,
         );

@@ -26,8 +26,8 @@ export type CheckInSummary = {
   urgent: string[];
   questions: string[];
   summary: string;
-  /** One entry per care-team question: the senior's own words, and whether the answer is a concern. */
-  answers: { question: string; said: string; concern: boolean }[];
+  /** One entry per care-team question: the senior's own words and their yes/no answer. Flags are decided by rules in care.ts, not here. */
+  answers: { question: string; said: string; answer: "yes" | "no" | "unclear" }[];
 };
 
 const schema = {
@@ -56,12 +56,12 @@ const schema = {
     answers: {
       type: "array",
       description:
-        "One entry per care-team question, question copied exactly. 'said' = the senior's own words (empty if not answered). 'concern' = true if the answer suggests a problem the care team should follow up on.",
+        "One entry per care-team question, question copied exactly. 'said' = the senior's own words (empty if not answered). 'answer' = yes or no if they clearly answered the question that way, otherwise unclear. Do not judge whether it is a problem.",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["question", "said", "concern"],
-        properties: { question: { type: "string" }, said: { type: "string" }, concern: { type: "boolean" } },
+        required: ["question", "said", "answer"],
+        properties: { question: { type: "string" }, said: { type: "string" }, answer: { type: "string", enum: ["yes", "no", "unclear"] } },
       },
     },
   },

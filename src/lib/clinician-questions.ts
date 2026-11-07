@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { refreshCare } from "./care-store";
-import type { Patient } from "./care";
+import type { FlagIf, Patient } from "./care";
 
 /**
  * Questions the care team wants Rosie to ask on the next call.
@@ -13,6 +13,11 @@ export type ClinicianQuestion = {
   text: string;
   askedBy: string;
   createdAt: string;
+  /** Flag the day when the answer is this (rule checked in care.ts). No rule = just record the answer. */
+  flagIf?: FlagIf;
+  /** Ask on every call instead of once. */
+  daily?: boolean;
+  /** One-off questions: set once answered, and the question is done. Daily questions keep the latest answer here too. */
   answer?: string;
   answeredAt?: string;
 };
@@ -24,7 +29,7 @@ export function clinicianQuestionsOf(p: Patient): ClinicianQuestion[] {
 }
 
 export function pendingClinicianQuestions(p: Patient): ClinicianQuestion[] {
-  return clinicianQuestionsOf(p).filter((q) => !q.answer);
+  return clinicianQuestionsOf(p).filter((q) => q.daily || !q.answer);
 }
 
 /** Extra lines for Rosie's call context. */
@@ -32,7 +37,7 @@ export function clinicianContext(p: Patient): string {
   const pending = pendingClinicianQuestions(p);
   if (!pending.length) return "";
   return `Questions from the care team to ask today — weave each in naturally ("Oh, your care team wanted me to ask…"), but ask it plainly and get a clear answer:\n- ${pending
-    .map((q) => `${q.text} (from ${q.askedBy})`)
+    .map((q) => `${q.text} (from ${q.askedBy}; get a clear yes or no)`)
     .join("\n- ")}`;
 }
 
@@ -40,7 +45,7 @@ export function clinicianContext(p: Patient): string {
 export function applyAnswers(list: ClinicianQuestion[], answers: ClinicianAnswer[], now: string): ClinicianQuestion[] {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
   return list.map((q) => {
-    if (q.answer) return q;
+    if (q.answer && !q.daily) return q;
     const hit = answers.find((a) => norm(a.question) === norm(q.text)) ?? answers.find((a) => norm(a.question).includes(norm(q.text)) || norm(q.text).includes(norm(a.question)));
     return hit && hit.said.trim() ? { ...q, answer: hit.said.trim(), answeredAt: now } : q;
   });
@@ -58,8 +63,11 @@ async function updateList(patientId: string, fn: (l: ClinicianQuestion[]) => Cli
 }
 
 export const clinicianQuestions = {
-  add: (patientId: string, text: string, askedBy: string) =>
-    updateList(patientId, (l) => [...l, { id: Math.random().toString(36).slice(2, 10), text, askedBy, createdAt: new Date().toISOString() }]),
+  add: (patientId: string, text: string, askedBy: string, rule: { flagIf?: FlagIf | undefined; daily?: boolean } = {}) =>
+    updateList(patientId, (l) => [
+      ...l,
+      { id: Math.random().toString(36).slice(2, 10), text, askedBy, createdAt: new Date().toISOString(), ...(rule.flagIf ? { flagIf: rule.flagIf } : {}), ...(rule.daily ? { daily: true } : {}) },
+    ]),
   remove: (patientId: string, id: string) => updateList(patientId, (l) => l.filter((q) => q.id !== id)),
   saveAnswers: (patientId: string, answers: ClinicianAnswer[]) =>
     updateList(patientId, (l) => applyAnswers(l, answers, new Date().toISOString())),

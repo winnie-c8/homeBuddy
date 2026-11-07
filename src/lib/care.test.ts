@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsForCheckIn, detectUrgent, checkInStatus, createSampleState, type CheckIn } from "./care";
+import { alertsForCheckIn, checkAnswers, detectUrgent, checkInStatus, createSampleState, isAnswerFlagged, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -57,5 +57,49 @@ describe("daily call context", () => {
     expect(_fu(p, now)[0]).toMatch(/^Yesterday: pain 5\/10/);
     expect(_ctx(p, [], now)).toContain("My head hurts.");
     expect(_ctx(p, [], now)).toContain("Good morning");
+  });
+});
+
+describe("care team question rules", () => {
+  it("flags only the answer the rule names", () => {
+    expect(isAnswerFlagged("no", "no")).toBe(true);
+    expect(isAnswerFlagged("yes", "no")).toBe(false);
+    expect(isAnswerFlagged("yes", "yes")).toBe(true);
+  });
+  it("flags unclear answers when there is a rule", () => expect(isAnswerFlagged("unclear", "no")).toBe(true));
+  it("never flags a question without a rule", () => {
+    expect(isAnswerFlagged("no", undefined)).toBe(false);
+    expect(isAnswerFlagged("unclear", undefined)).toBe(false);
+  });
+
+  const asked = [{ text: "Did you do your dialysis today?", flagIf: "no" as const }, { text: "How was lunch?" }];
+  it("matches answers to questions and keeps the senior's words", () => {
+    const [dialysis, lunch] = checkAnswers(asked, [
+      { question: "did you do your dialysis today", said: "No, I skipped it", answer: "no" },
+      { question: "How was lunch?", said: "Lovely soup", answer: "unclear" },
+    ]);
+    expect(dialysis).toMatchObject({ answer: "no", said: "No, I skipped it", flagged: true });
+    expect(lunch).toMatchObject({ said: "Lovely soup", flagged: false });
+  });
+  it("treats a question the AI did not report as unclear", () => {
+    expect(checkAnswers(asked, [])[0]).toMatchObject({ answer: "unclear", said: "", flagged: true });
+  });
+  it("treats an answer with no words as unclear, even if the AI said yes", () => {
+    expect(checkAnswers(asked, [{ question: asked[0]!.text, said: " ", answer: "yes" }])[0]!.flagged).toBe(true);
+  });
+  it("gives the same result every time", () => {
+    const heard = [{ question: asked[0]!.text, said: "Yes, this morning", answer: "yes" as const }];
+    expect(checkAnswers(asked, heard)).toEqual(checkAnswers(asked, heard));
+  });
+
+  const flagged = checkAnswers(asked, [{ question: asked[0]!.text, said: "No, I skipped it", answer: "no" }]);
+  it("turns the day yellow", () => expect(checkInStatus({ ...ok, answers: flagged })).toBe("yellow"));
+  it("stays green when answers are fine", () =>
+    expect(checkInStatus({ ...ok, answers: checkAnswers(asked, [{ question: asked[0]!.text, said: "Yes", answer: "yes" }]) })).toBe("green"));
+  it("raises a warning that quotes the senior", () => {
+    const p = createSampleState().patients.find((x) => x.id === "margaret")!;
+    const a = alertsForCheckIn(p, { ...ok, answers: flagged }).find((x) => x.message.includes("dialysis"))!;
+    expect(a.level).toBe("warning");
+    expect(a.message).toContain('"No, I skipped it"');
   });
 });

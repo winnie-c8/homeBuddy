@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { clinicianQuestions, clinicianQuestionsOf } from "@/lib/clinician-questions";
 import { care, useCare } from "@/lib/care-store";
-import { checkInStatus, patientStatus, type CheckIn, type Patient } from "@/lib/care";
+import { checkInStatus, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/care/$patientId")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
@@ -215,22 +215,38 @@ function PlanEditor({ p }: { p: Patient }) {
 function AskRosie({ p }: { p: Patient }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [flagIf, setFlagIf] = useState<"" | FlagIf>("");
+  const [daily, setDaily] = useState(false);
   const { account } = useRouteContext({ from: "/_authenticated" });
   const list = clinicianQuestionsOf(p).reverse();
   return (
     <section className="mt-8 rounded-3xl border border-border bg-card p-6">
-      <h2 className="text-2xl font-semibold">Ask {p.preferredName} on the next call</h2>
-      <p className="text-sm text-muted-foreground">Rosie will ask these in her own friendly words and bring back the answer.</p>
+      <h2 className="text-2xl font-semibold">{p.preferredName}'s check-in questions</h2>
+      <p className="text-sm text-muted-foreground">Rosie asks these as yes/no questions and brings back {p.preferredName}'s words. Your "flag if" rule decides the colour, not the AI.</p>
       <form
-        className="mt-4 flex gap-2"
+        className="mt-4 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (!text.trim()) return;
           setBusy(true);
-          clinicianQuestions.add(p.id, text.trim(), account.displayName).then(() => setText("")).finally(() => setBusy(false));
+          clinicianQuestions
+            .add(p.id, text.trim(), account.displayName, { flagIf: flagIf || undefined, daily })
+            .then(() => setText(""))
+            .finally(() => setBusy(false));
         }}
       >
-        <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Has the swelling in your ankles gone down?" />
+        <Input className="min-w-64 flex-1" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Did you do your dialysis today?" />
+        <label className="flex items-center gap-2 text-sm">
+          Flag if
+          <select className="rounded-md border border-input bg-background px-2 py-2" value={flagIf} onChange={(e) => setFlagIf(e.target.value as "" | FlagIf)}>
+            <option value="">never (just record)</option>
+            <option value="no">answer is No</option>
+            <option value="yes">answer is Yes</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" className="size-4" checked={daily} onChange={(e) => setDaily(e.target.checked)} /> Ask every day
+        </label>
         <Button type="submit" disabled={busy || !text.trim()}><Plus /> Add question</Button>
       </form>
       <ul className="mt-4 space-y-3">
@@ -239,14 +255,16 @@ function AskRosie({ p }: { p: Patient }) {
           <li key={q.id} className="flex items-start justify-between gap-3 rounded-2xl bg-muted p-4">
             <div>
               <p className="font-bold">"{q.text}"</p>
-              <p className="text-xs text-muted-foreground">{q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")}</p>
+              <p className="text-xs text-muted-foreground">
+                {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
+              </p>
               {q.answer ? (
                 <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
               ) : (
                 <p className="mt-2 text-sm text-muted-foreground">Waiting — Rosie will ask on the next call</p>
               )}
             </div>
-            {!q.answer && (
+            {(q.daily || !q.answer) && (
               <Button size="icon" variant="ghost" aria-label="Remove question" onClick={() => void clinicianQuestions.remove(p.id, q.id)}><Trash2 /></Button>
             )}
           </li>

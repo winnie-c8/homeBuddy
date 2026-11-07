@@ -126,7 +126,8 @@ file, ask them first.
   call passes it to the AI unchanged.
 - **Out of the call:** the summary type `CheckInSummary` in `checkin.functions.ts` (AI-call
   teammate). If you add or rename a field, tell Kaitlyn so the rules use it. Agreed next
-  field: `answers: { question, said, concern }[]` for the clinician's questions.
+  field (in place): `answers: { question, said, answer: yes | no | unclear }[]`. The AI only
+  reports; `care.ts` applies each question's "flag if" rule.
 
 ## Decision log
 

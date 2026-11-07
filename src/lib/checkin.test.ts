@@ -11,7 +11,7 @@ const SUMMARY: CheckInSummary = {
   fall: false,
   urgent: [],
   questions: [],
-  answers: [{ question: "Is your ankle swelling better?", said: "No, it's worse today", concern: true }],
+  answers: [{ question: "Is your ankle swelling better?", said: "No, it's worse today", answer: "no" }],
   summary: "Margaret took her metformin and ate breakfast.",
 };
 
@@ -79,10 +79,10 @@ describe("runSummary model fallback", () => {
 });
 
 describe("care-team answers", () => {
-  it("returns each answer with the senior's words and a concern flag", async () => {
+  it("returns each answer with the senior's words and a yes/no answer", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => okResponse()));
     const result = await runSummary({ ...DATA, clinicianQuestions: ["Is your ankle swelling better?"] });
-    expect(result.answers).toEqual([{ question: "Is your ankle swelling better?", said: "No, it's worse today", concern: true }]);
+    expect(result.answers).toEqual([{ question: "Is your ankle swelling better?", said: "No, it's worse today", answer: "no" }]);
   });
 
   it("sends the care-team questions to the summary model", async () => {
@@ -90,7 +90,7 @@ describe("care-team answers", () => {
     vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => { body = String(init.body); return okResponse(); }));
     await runSummary({ ...DATA, clinicianQuestions: ["Is your ankle swelling better?"] });
     expect(body).toContain("Is your ankle swelling better?");
-    expect(body).toContain('"concern"');
+    expect(body).toContain('"unclear"');
   });
 
   it("defaults to no answers when the model leaves the field out", async () => {
