@@ -149,8 +149,6 @@ function AuthPage() {
           {chosenRole === "senior" ? "Patient" : chosenRole === "family" ? "Family" : "Care team"} {mode === "signup" ? "sign up" : "sign in"}
         </p>
       )}
-      <h1 className="sr-only">
-      </h1>
       <p className="mt-2 text-lg text-muted-foreground">
         {mode === "signup" ? "Tell us who you are so we show the right page." : "Sign in to homeBuddy."}
       </p>
