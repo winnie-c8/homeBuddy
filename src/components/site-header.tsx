@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { HeartHandshake, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import logo from "@/assets/homebuddy-logo.svg";
 import { supabase } from "@/integrations/supabase/client";
 import { clearCare } from "@/lib/care-store";
 import { PREVIEW_ALL_PAGES, ROLE_LABELS, roleHome, useAccount } from "@/lib/auth";
@@ -24,9 +25,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
         <Link to="/" className="flex items-center gap-2 text-foreground">
-          <span className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
-            <HeartHandshake className="size-5" />
-          </span>
+          <img src={logo} alt="" className="h-9 w-auto rounded-md" />
           <span className="font-display text-xl font-semibold">homeBuddy</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
