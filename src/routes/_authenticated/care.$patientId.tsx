@@ -59,8 +59,6 @@ function PatientPage() {
 
       <Flags checkIns={checkIns} />
 
-      <AskRosie p={p} />
-
       <Panel title="Graphs">
         <div className="grid gap-5 md:grid-cols-2">
           {clinicianQuestionsOf(p).map((q) => (
@@ -82,6 +80,8 @@ function PatientPage() {
           </div>
         </div>
       </Panel>
+
+      <AskRosie p={p} />
 
       <PlanEditor p={p} />
 
@@ -275,7 +275,7 @@ function AskRosie({ p }: { p: Patient }) {
   const list = clinicianQuestionsOf(p).reverse();
   return (
     <Panel title={`Ask ${p.preferredName} a question`}>
-      <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI. Each question gets its own graph and table in Graphs below.</p>
+      <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI. Each question gets its own graph and table in Graphs above.</p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
@@ -331,7 +331,7 @@ function AskRosie({ p }: { p: Patient }) {
         </div>
         )}
         <label className="flex items-center gap-2 bg-pt-btn px-3 py-1 text-sm text-primary-foreground">
-          Turns red after
+          Immediate attention after
           <Input className="h-8 w-14 rounded-none bg-card text-foreground" type="number" min={1} value={redAfter} onChange={(e) => setRedAfter(e.target.value)} placeholder="–" />
           days in a row
           <span className="opacity-80">
@@ -356,7 +356,7 @@ function AskRosie({ p }: { p: Patient }) {
                 {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {frequencyLabel(q)} · {q.kind === "number"
                   ? `Number${q.unit ? ` (${q.unit})` : ""} · ${[q.below !== undefined ? `flag below ${q.below}` : "", q.above !== undefined ? `flag above ${q.above}` : ""].filter(Boolean).join(", ") || "no flag"}`
                   : q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
-                {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} days in a row` : "Never red"}`}
+                {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Immediate attention right away" : q.redAfter ? `Immediate attention after ${q.redAfter} days in a row` : "Never immediate attention"}`}
               </p>
               {q.answer ? (
                 <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
@@ -425,6 +425,7 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
     day: format(new Date(x.date), "EEE d"),
     v: q.kind === "number" ? x.value : 1,
     label: q.kind === "number" ? (x.value ?? "unclear") : x.answer,
+    tick: `${format(new Date(x.date), "EEE d")} · ${q.kind === "number" ? (x.value ?? "?") : x.answer}`,
     said: x.said,
     fill: colour(x),
   }));
@@ -456,10 +457,10 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
             </LineChart>
           ) : (
             <BarChart data={rows} margin={{ left: -20, right: 8, top: 6 }}>
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+              <XAxis dataKey="tick" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} interval={0} />
               <YAxis hide domain={[0, 1]} />
               <Tooltip content={tip} cursor={{ fill: "var(--muted)" }} />
-              <Bar dataKey="v" radius={[4, 4, 0, 0]} label={{ position: "insideTop", fontSize: 11, fill: "white", formatter: (_: unknown, __: unknown, i: number) => rows[i]?.label }}>
+              <Bar dataKey="v" radius={[4, 4, 0, 0]} maxBarSize={36}>
                 {rows.map((r, i) => <Cell key={i} fill={r.fill} />)}
               </Bar>
             </BarChart>
