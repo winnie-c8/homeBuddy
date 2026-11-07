@@ -11,10 +11,11 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   care_team: "Care team",
 };
 
-export function roleHome(role: AppRole | null): "/senior" | "/family" | "/care" {
+export function roleHome(role: AppRole | null): "/senior" | "/family" | "/care" | "/welcome" {
   if (role === "senior") return "/senior";
   if (role === "care_team") return "/care";
-  return "/family";
+  if (role === "family") return "/family";
+  return "/welcome";
 }
 
 export async function getAccount(): Promise<Account | null> {
@@ -28,7 +29,7 @@ export async function getAccount(): Promise<Account | null> {
   return {
     id: user.id,
     email: user.email ?? "",
-    displayName: profile?.display_name || user.email || "",
+    displayName: profile?.display_name || user.email || user.phone || "",
     phone: profile?.phone ?? null,
     role: (roles?.[0]?.role as AppRole | undefined) ?? null,
   };

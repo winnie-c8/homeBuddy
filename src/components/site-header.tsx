@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { HeartHandshake, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearCare } from "@/lib/care-store";
 import { ROLE_LABELS, roleHome, useAccount } from "@/lib/auth";
 
 export function SiteHeader() {
@@ -14,6 +15,7 @@ export function SiteHeader() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
+    clearCare();
     await router.invalidate();
     await navigate({ to: "/auth", replace: true });
   }
