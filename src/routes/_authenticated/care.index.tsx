@@ -168,7 +168,7 @@ function CareDashboard() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(a.at), { addSuffix: true })} · Notified {a.notified.join(", ")}
                   </p>
-                  <Button size="sm" variant="outline" className="mt-2 rounded-full" onClick={() => void care.acknowledgeAlert(a.patientId, a.id)}>
+                  <Button size="sm" variant="outline" className="mt-2 rounded-full" onClick={() => openResolve(a)}>
                     Mark handled
                   </Button>
                 </div>
@@ -176,6 +176,71 @@ function CareDashboard() {
             })}
           </div>
         </section>
+
+        {handled.length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-4 flex items-center gap-2 text-3xl font-bold"><CheckCircle2 className="size-6" /> Handled</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {handled.map((a) => {
+                const p = state.patients.find((x) => x.id === a.patientId);
+                return (
+                  <div key={a.id} className="bg-card p-5 shadow-[var(--shadow-soft)]">
+                    <p className="text-lg font-bold">{p?.name}</p>
+                    <p className="text-muted-foreground">{a.message}</p>
+                    <p className="mt-2 italic">"{a.resolution}"</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {a.resolvedBy ?? "Care team"} · {formatDistanceToNow(new Date(a.resolvedAt ?? a.at), { addSuffix: true })}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <Dialog open={!!resolving} onOpenChange={(o) => { if (!o && !saving) setResolving(null); }}>
+          <DialogContent className="rounded-none border-0 bg-clinic-bg p-0 shadow-[var(--shadow-soft)] sm:rounded-none">
+            <DialogTitle className="sr-only">Mark alert handled</DialogTitle>
+            <DialogDescription className="sr-only">Write how the situation was resolved before marking it handled.</DialogDescription>
+            <div className="space-y-4 bg-card p-8">
+              <div>
+                <h3 className="text-4xl font-bold">Mark handled</h3>
+                <p className="mt-1 italic text-muted-foreground">Say how this was resolved so the team knows it is closed.</p>
+              </div>
+              {resolving && (
+                <div className="bg-clinic-bg p-4">
+                  <p className="font-bold">{state.patients.find((x) => x.id === resolving.patientId)?.name}</p>
+                  <p>{resolving.message}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(resolving.at), { addSuffix: true })} · Notified {resolving.notified.join(", ")}
+                  </p>
+                </div>
+              )}
+              <div>
+                <label className="text-lg font-bold" htmlFor="resolution-note">
+                  How was it resolved? <span className="text-risk-ink">Required</span>
+                </label>
+                <Textarea
+                  id="resolution-note"
+                  className="mt-2 min-h-28 rounded-none bg-clinic-bg text-lg"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="e.g. Called the senior, symptoms settled, advised to rest and re-check tomorrow morning"
+                />
+                <p className="mt-1 text-sm italic text-muted-foreground">The care team and anyone the senior shares with can read this note.</p>
+              </div>
+              {resolveError && <p className="text-risk-ink">{resolveError}</p>}
+              <div className="flex gap-3">
+                <Button className="h-12 rounded-2xl px-6 text-lg" disabled={!note.trim() || saving} onClick={() => void submitResolve()}>
+                  {saving ? "Saving…" : "Mark handled"}
+                </Button>
+                <Button variant="outline" className="h-12 rounded-2xl px-6 text-lg" disabled={saving} onClick={() => setResolving(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </main>
     </div>
