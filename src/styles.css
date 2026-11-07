@@ -72,7 +72,6 @@
   --color-call-green: var(--call-green);
   --color-scene-ink: var(--scene-ink);
   --color-clinic-bg: var(--clinic-bg);
-  --color-clinic-swirl: var(--clinic-swirl);
   --color-risk: var(--risk);
   --color-risk-soft: var(--risk-soft);
   --color-risk-ink: var(--risk-ink);
@@ -143,7 +142,6 @@
   --call-green: oklch(0.8 0.17 145);
   --scene-ink: oklch(0.99 0 0);
   --clinic-bg: #eef2f6;
-  --clinic-swirl: #fff6c8;
   --risk: #eb6b6b;
   --risk-soft: #f4d2d2;
   --risk-ink: #d00000;
