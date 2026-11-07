@@ -10,73 +10,120 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as FamilyRouteImport } from './routes/family'
-import { Route as SeniorRouteImport } from './routes/senior'
-import { Route as CareIndexRouteImport } from './routes/care.index'
-import { Route as CarePatientIdRouteImport } from './routes/care.$patientId'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedFamilyRouteImport } from './routes/_authenticated/family'
+import { Route as AuthenticatedSeniorRouteImport } from './routes/_authenticated/senior'
+import { Route as AuthenticatedCareIndexRouteImport } from './routes/_authenticated/care.index'
+import { Route as AuthenticatedCarePatientIdRouteImport } from './routes/_authenticated/care.$patientId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FamilyRoute = FamilyRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedFamilyRoute = AuthenticatedFamilyRouteImport.update({
   id: '/family',
   path: '/family',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const SeniorRoute = SeniorRouteImport.update({
+const AuthenticatedSeniorRoute = AuthenticatedSeniorRouteImport.update({
   id: '/senior',
   path: '/senior',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const CareIndexRoute = CareIndexRouteImport.update({
+const AuthenticatedCareIndexRoute = AuthenticatedCareIndexRouteImport.update({
   id: '/care/',
   path: '/care/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const CarePatientIdRoute = CarePatientIdRouteImport.update({
-  id: '/care/$patientId',
-  path: '/care/$patientId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedCarePatientIdRoute =
+  AuthenticatedCarePatientIdRouteImport.update({
+    id: '/care/$patientId',
+    path: '/care/$patientId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/family': typeof FamilyRoute
-  '/senior': typeof SeniorRoute
-  '/care/$patientId': typeof CarePatientIdRoute
-  '/care/': typeof CareIndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/family': typeof AuthenticatedFamilyRoute
+  '/senior': typeof AuthenticatedSeniorRoute
+  '/care/$patientId': typeof AuthenticatedCarePatientIdRoute
+  '/care/': typeof AuthenticatedCareIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/family': typeof FamilyRoute
-  '/senior': typeof SeniorRoute
-  '/care/$patientId': typeof CarePatientIdRoute
-  '/care': typeof CareIndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/family': typeof AuthenticatedFamilyRoute
+  '/senior': typeof AuthenticatedSeniorRoute
+  '/care/$patientId': typeof AuthenticatedCarePatientIdRoute
+  '/care': typeof AuthenticatedCareIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/family': typeof FamilyRoute
-  '/senior': typeof SeniorRoute
-  '/care/$patientId': typeof CarePatientIdRoute
-  '/care/': typeof CareIndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/family': typeof AuthenticatedFamilyRoute
+  '/_authenticated/senior': typeof AuthenticatedSeniorRoute
+  '/_authenticated/care/$patientId': typeof AuthenticatedCarePatientIdRoute
+  '/_authenticated/care/': typeof AuthenticatedCareIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/family' | '/senior' | '/care/$patientId' | '/care/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/family'
+    | '/senior'
+    | '/care/$patientId'
+    | '/care/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/family' | '/senior' | '/care/$patientId' | '/care'
-  id: '__root__' | '/' | '/family' | '/senior' | '/care/$patientId' | '/care/'
+  to:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/family'
+    | '/senior'
+    | '/care/$patientId'
+    | '/care'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
+    | '/_authenticated/family'
+    | '/_authenticated/senior'
+    | '/_authenticated/care/$patientId'
+    | '/_authenticated/care/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  FamilyRoute: typeof FamilyRoute
-  SeniorRoute: typeof SeniorRoute
-  CarePatientIdRoute: typeof CarePatientIdRoute
-  CareIndexRoute: typeof CareIndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,43 +135,80 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/family': {
-      id: '/family'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/family': {
+      id: '/_authenticated/family'
       path: '/family'
       fullPath: '/family'
-      preLoaderRoute: typeof FamilyRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedFamilyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/senior': {
-      id: '/senior'
+    '/_authenticated/senior': {
+      id: '/_authenticated/senior'
       path: '/senior'
       fullPath: '/senior'
-      preLoaderRoute: typeof SeniorRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSeniorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/care/': {
-      id: '/care/'
+    '/_authenticated/care/': {
+      id: '/_authenticated/care/'
       path: '/care'
       fullPath: '/care/'
-      preLoaderRoute: typeof CareIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCareIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/care/$patientId': {
-      id: '/care/$patientId'
+    '/_authenticated/care/$patientId': {
+      id: '/_authenticated/care/$patientId'
       path: '/care/$patientId'
       fullPath: '/care/$patientId'
-      preLoaderRoute: typeof CarePatientIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCarePatientIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedFamilyRoute: typeof AuthenticatedFamilyRoute
+  AuthenticatedSeniorRoute: typeof AuthenticatedSeniorRoute
+  AuthenticatedCarePatientIdRoute: typeof AuthenticatedCarePatientIdRoute
+  AuthenticatedCareIndexRoute: typeof AuthenticatedCareIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedFamilyRoute: AuthenticatedFamilyRoute,
+  AuthenticatedSeniorRoute: AuthenticatedSeniorRoute,
+  AuthenticatedCarePatientIdRoute: AuthenticatedCarePatientIdRoute,
+  AuthenticatedCareIndexRoute: AuthenticatedCareIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  FamilyRoute: FamilyRoute,
-  SeniorRoute: SeniorRoute,
-  CarePatientIdRoute: CarePatientIdRoute,
-  CareIndexRoute: CareIndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

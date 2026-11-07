@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff, Mic, MicOff, Volume2, Check, ShieldCheck, Loader2 } from "lucide-react";
@@ -11,7 +12,8 @@ import { care, useCare } from "@/lib/care-store";
 import { callContext, detectUrgent } from "@/lib/care";
 import { summarizeCheckIn, type CheckInSummary } from "@/lib/checkin.functions";
 
-export const Route = createFileRoute("/senior")({
+export const Route = createFileRoute("/_authenticated/senior")({
+  beforeLoad: ({ context }) => requireRole(context.account, "senior"),
   head: () => ({
     meta: [
       { title: "Today's check-in — Hearthline" },

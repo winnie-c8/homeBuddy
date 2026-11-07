@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { BellRing, MessageCircleQuestion, RotateCcw } from "lucide-react";
@@ -6,7 +7,8 @@ import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { adherence, latestCheckIn, patientStatus, type Status } from "@/lib/care";
 
-export const Route = createFileRoute("/care/")({
+export const Route = createFileRoute("/_authenticated/care/")({
+  beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
   head: () => ({
     meta: [
       { title: "Care team dashboard — Hearthline" },

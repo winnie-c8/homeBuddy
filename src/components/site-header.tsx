@@ -1,13 +1,23 @@
-import { Link } from "@tanstack/react-router";
-import { HeartHandshake } from "lucide-react";
-
-const links = [
-  { to: "/senior", label: "Margaret's view" },
-  { to: "/family", label: "Family" },
-  { to: "/care", label: "Care team" },
-] as const;
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { HeartHandshake, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ROLE_LABELS, roleHome, useAccount } from "@/lib/auth";
 
 export function SiteHeader() {
+  const account = useAccount();
+  const navigate = useNavigate();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    await router.invalidate();
+    await navigate({ to: "/auth", replace: true });
+  }
+
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3">
@@ -18,16 +28,28 @@ export function SiteHeader() {
           <span className="font-display text-xl font-semibold">Hearthline</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              activeProps={{ className: "bg-secondary text-foreground" }}
-            >
-              {l.label}
+          {account ? (
+            <>
+              <Link
+                to={roleHome(account.role)}
+                className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                activeProps={{ className: "bg-secondary text-foreground" }}
+              >
+                <span className="font-medium text-foreground">{account.displayName}</span>
+                {account.role && <span className="hidden sm:inline"> · {ROLE_LABELS[account.role]}</span>}
+              </Link>
+              <button
+                onClick={signOut}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <LogOut className="size-4" /> Sign out
+              </button>
+            </>
+          ) : account === null ? (
+            <Link to="/auth" className="rounded-full bg-primary px-4 py-1.5 text-primary-foreground transition-colors hover:bg-primary/90">
+              Sign in
             </Link>
-          ))}
+          ) : null}
         </nav>
       </div>
     </header>
