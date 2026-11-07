@@ -126,6 +126,11 @@ export const care = {
       return { ...b, alerts: [{ id: uid(), patientId, at: new Date().toISOString(), level: "urgent", message, notified }, ...b.alerts] };
     });
   },
+  /** Clinician's follow-up on an alert: "on_it", then "resolved" with a short note. */
+  async followUp(patientId: string, id: string, status: "on_it" | "resolved", by: string, note?: string) {
+    const followUp = { status, by, at: new Date().toISOString(), ...(note?.trim() ? { note: note.trim() } : {}) };
+    await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, followUp } : a)) }));
+  },
   async acknowledgeAlert(patientId: string, id: string) {
     await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)) }));
   },

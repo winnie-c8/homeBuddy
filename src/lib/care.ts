@@ -79,8 +79,41 @@ export type Alert = {
   /** Which rule fired (e.g. "mood_low"); used to spot the same reason on several days. */
   key?: string | undefined;
   notified: string[];
+  /** Older "Mark handled" flag; counts as resolved. */
   acknowledged?: boolean;
+  /** The clinician's follow-up: On it → Resolved (with a short note). */
+  followUp?: FollowUp | undefined;
 };
+
+export type FollowUp = { status: "on_it" | "resolved"; by: string; at: string; note?: string | undefined };
+export type AlertStage = "new" | "on_it" | "resolved";
+
+export function alertStage(a: Alert): AlertStage {
+  if (a.followUp?.status === "resolved" || a.acknowledged) return "resolved";
+  return a.followUp?.status === "on_it" ? "on_it" : "new";
+}
+
+/** "3 h", "25 min", "2 days": how long an alert has waited for a response. */
+export function waitingFor(a: Alert, now: Date = new Date()): string {
+  const min = Math.max(0, Math.round((now.getTime() - new Date(a.at).getTime()) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.round(min / 60);
+  return h < 48 ? `${h} h` : `${Math.round(h / 24)} days`;
+}
+
+/** What family see about the care team's response. */
+export function followUpForFamily(a: Alert): string {
+  const f = a.followUp;
+  if (f?.status === "resolved") return `Resolved by ${f.by}${f.note ? `: ${f.note}` : ""}`;
+  if (a.acknowledged) return "Seen by the care team";
+  if (f?.status === "on_it") return `${f.by} is on it`;
+  return "The care team has been told";
+}
+
+/** Clinician's list: red first, then the longest-waiting. */
+export function sortAlertsForClinician(alerts: Alert[]): Alert[] {
+  return [...alerts].sort((a, b) => (a.level === b.level ? a.at.localeCompare(b.at) : a.level === "urgent" ? -1 : 1));
+}
 
 /** One reason a check-in is yellow or red. Every flag comes from exactly one of these. */
 export type Finding = { key: string; status: "red" | "yellow"; clinician: string; family: string };

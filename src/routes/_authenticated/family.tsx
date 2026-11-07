@@ -7,7 +7,7 @@ import { useCare } from "@/lib/care-store";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { JoinPatientCard } from "@/components/join-patient";
-import { adherence, latestCheckIn, patientStatus } from "@/lib/care";
+import { adherence, alertStage, followUpForFamily, latestCheckIn, patientStatus } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/family")({
   beforeLoad: ({ context }) => requireRole(context.account, "family"),
@@ -59,7 +59,7 @@ function FamilyPage() {
 
   const last = latestCheckIn(p);
   const week = [...p.checkIns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
-  const alerts = state.alerts.filter((a) => a.patientId === p.id && a.notified.includes(ME.name));
+  const alerts = state.alerts.filter((a) => a.patientId === p.id && a.notified.includes(ME.name)).sort((a, b) => b.at.localeCompare(a.at));
 
   return (
     <main className="mx-auto max-w-4xl px-5 pb-24 pt-12">
@@ -77,6 +77,7 @@ function FamilyPage() {
               <div>
                 <p className="font-bold">{a.family ?? a.message}</p>
                 <p className="text-sm text-muted-foreground">{formatDistanceToNow(new Date(a.at), { addSuffix: true })}</p>
+                <p className={`mt-1 text-sm font-semibold ${alertStage(a) === "resolved" ? "text-primary" : ""}`}>{followUpForFamily(a)}</p>
               </div>
             </div>
           ))}

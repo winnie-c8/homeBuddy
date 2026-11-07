@@ -1,12 +1,14 @@
 import { requireRole } from "@/lib/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+import { useState } from "react";
 import { BellRing, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { JoinPatientCard } from "@/components/join-patient";
-import { adherence, latestCheckIn, patientStatus, type Status } from "@/lib/care";
+import { adherence, alertStage, latestCheckIn, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type Status } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/care/")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
@@ -32,7 +34,8 @@ function CareDashboard() {
   const patients = [...state.patients].sort((a, b) => order[patientStatus(a)] - order[patientStatus(b)]);
   const counts = { red: 0, yellow: 0, green: 0 } as Record<Status, number>;
   patients.forEach((p) => counts[patientStatus(p)]++);
-  const openAlerts = state.alerts.filter((a) => !a.acknowledged);
+  const openAlerts = sortAlertsForClinician(state.alerts.filter((a) => alertStage(a) !== "resolved"));
+  const resolved = state.alerts.filter((a) => alertStage(a) === "resolved").sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5);
 
   return (
     <main className="mx-auto max-w-6xl px-5 pb-24 pt-10">
@@ -88,25 +91,63 @@ function CareDashboard() {
           <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold"><BellRing className="size-5" /> Alerts</h2>
           <div className="space-y-3">
             {openAlerts.length === 0 && <p className="text-muted-foreground">No open alerts.</p>}
-            {openAlerts.map((a) => {
-              const p = state.patients.find((x) => x.id === a.patientId);
-              return (
-                <div key={a.id} className={`rounded-2xl p-4 ${a.level === "urgent" ? "bg-status-red-soft" : "bg-status-yellow-soft"}`}>
-                  <p className="font-bold">{p?.name}</p>
-                  <p>{a.message}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(a.at), { addSuffix: true })} · Notified {a.notified.join(", ")}
-                  </p>
-                  <Button size="sm" variant="outline" className="mt-2 rounded-full" onClick={() => void care.acknowledgeAlert(a.patientId, a.id)}>
-                    Mark handled
-                  </Button>
-                </div>
-              );
-            })}
+            {openAlerts.map((a) => (
+              <AlertCard key={a.id} a={a} patientName={state.patients.find((x) => x.id === a.patientId)?.name ?? ""} me={account.displayName} />
+            ))}
+            {resolved.length > 0 && (
+              <details className="rounded-2xl border border-border p-4">
+                <summary className="cursor-pointer font-semibold">Resolved ({resolved.length})</summary>
+                <ul className="mt-2 space-y-2 text-sm">
+                  {resolved.map((a) => (
+                    <li key={a.id}>
+                      <span className="font-semibold">{state.patients.find((x) => x.id === a.patientId)?.name}:</span> {a.message}
+                      <span className="block text-muted-foreground">
+                        {a.followUp ? `Resolved by ${a.followUp.by}, ${format(new Date(a.followUp.at), "h:mm a")}${a.followUp.note ? ` — ${a.followUp.note}` : ""}` : "Marked handled"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </div>
           <JoinPatientCard kind="care_team" />
         </aside>
       </div>
     </main>
+  );
+}
+
+/** One alert and the clinician's follow-up: New → On it → Resolved (with a note family can see). */
+function AlertCard({ a, patientName, me }: { a: Alert; patientName: string; me: string }) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const stage = alertStage(a);
+  const act = (status: "on_it" | "resolved") => {
+    setBusy(true);
+    void care.followUp(a.patientId, a.id, status, me, status === "resolved" ? note : undefined).finally(() => setBusy(false));
+  };
+  return (
+    <div className={`rounded-2xl p-4 ${a.level === "urgent" ? "bg-status-red-soft" : "bg-status-yellow-soft"}`}>
+      <p className="text-xs font-bold uppercase tracking-wide">{a.level === "urgent" ? "Respond today" : "Watch"}</p>
+      <p className="font-bold">{patientName}</p>
+      <p>{a.message}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {formatDistanceToNow(new Date(a.at), { addSuffix: true })} · Notified {a.notified.join(", ")}
+      </p>
+      {stage === "new" ? (
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-sm font-semibold">Waiting {waitingFor(a)}</span>
+          <Button size="sm" className="rounded-full" disabled={busy} onClick={() => act("on_it")}>On it</Button>
+        </div>
+      ) : (
+        <div className="mt-2 space-y-2">
+          <p className="text-sm font-semibold">On it · {a.followUp?.by} · {a.followUp ? format(new Date(a.followUp.at), "h:mm a") : ""}</p>
+          <div className="flex gap-2">
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was done? e.g. Called, booked dialysis tomorrow" className="h-9 bg-background" />
+            <Button size="sm" variant="outline" className="rounded-full" disabled={busy} onClick={() => act("resolved")}>Resolve</Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

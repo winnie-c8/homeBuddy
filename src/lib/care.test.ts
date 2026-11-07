@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsForCheckIn, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, isAnswerFlagged, patientStatus, type CheckIn } from "./care";
+import { alertStage, alertsForCheckIn, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -150,4 +150,36 @@ describe("a day takes its worst colour (#6)", () => {
     expect(patientStatus({ ...p, checkIns })).toBe("green");
   });
   it("is yellow when there are no check-ins yet", () => expect(patientStatus({ ...p, checkIns: [] })).toBe("yellow"));
+});
+
+describe("follow-up (#7)", () => {
+  const base: Alert = { id: "a", patientId: "p", at: "2026-11-07T12:00:00.000Z", level: "warning", message: "Mood 1/5 (low)", notified: [] };
+  it("starts as new and tells family the care team knows", () => {
+    expect(alertStage(base)).toBe("new");
+    expect(followUpForFamily(base)).toBe("The care team has been told");
+  });
+  it("on it shows who is handling it", () => {
+    const a = { ...base, followUp: { status: "on_it" as const, by: "Dr. Patel", at: base.at } };
+    expect(alertStage(a)).toBe("on_it");
+    expect(followUpForFamily(a)).toBe("Dr. Patel is on it");
+  });
+  it("resolved shows the note to family", () => {
+    const a = { ...base, followUp: { status: "resolved" as const, by: "Dr. Patel", at: base.at, note: "Called, booked dialysis tomorrow" } };
+    expect(alertStage(a)).toBe("resolved");
+    expect(followUpForFamily(a)).toBe("Resolved by Dr. Patel: Called, booked dialysis tomorrow");
+  });
+  it("treats the old 'Mark handled' as resolved", () => expect(alertStage({ ...base, acknowledged: true })).toBe("resolved"));
+  it("shows how long an alert has waited", () => {
+    expect(waitingFor(base, new Date("2026-11-07T12:25:00.000Z"))).toBe("25 min");
+    expect(waitingFor(base, new Date("2026-11-07T15:00:00.000Z"))).toBe("3 h");
+    expect(waitingFor(base, new Date("2026-11-10T12:00:00.000Z"))).toBe("3 days");
+  });
+  it("puts red first, then the longest-waiting", () => {
+    const list = [
+      { ...base, id: "y-new", at: "2026-11-07T14:00:00.000Z" },
+      { ...base, id: "r", level: "urgent" as const, at: "2026-11-07T15:00:00.000Z" },
+      { ...base, id: "y-old", at: "2026-11-07T09:00:00.000Z" },
+    ];
+    expect(sortAlertsForClinician(list).map((a) => a.id)).toEqual(["r", "y-old", "y-new"]);
+  });
 });
