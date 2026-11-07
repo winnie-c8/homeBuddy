@@ -31,10 +31,10 @@ function Banner({ role, label, bg, ink, scene, front, icon }: { role: "senior" |
       <svg viewBox="0 0 700 140" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden="true">
         {scene}
       </svg>
-      <span className={`absolute left-5 top-1/2 grid size-24 -translate-y-1/2 place-items-center bg-scene-ink p-2 md:size-28 ${ink}`}>{icon}</span>
       <svg viewBox="0 0 700 140" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden="true">
         {front}
       </svg>
+      <span className={`absolute left-5 top-1/2 z-10 grid size-24 -translate-y-1/2 place-items-center bg-scene-ink p-2 md:size-28 ${ink}`}>{icon}</span>
       <span style={shadow} className="absolute left-36 top-1/2 -translate-y-1/2 text-5xl font-bold text-scene-ink md:left-44 md:text-6xl">
         {label}
       </span>
