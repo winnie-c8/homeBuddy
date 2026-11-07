@@ -75,6 +75,10 @@ export type Alert = {
   message: string;
   notified: string[];
   acknowledged?: boolean;
+  /** How the care team resolved it — required before an alert can be marked handled. */
+  resolution?: string;
+  resolvedBy?: string;
+  resolvedAt?: string;
 };
 
 export type Patient = {

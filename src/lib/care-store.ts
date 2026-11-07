@@ -126,8 +126,16 @@ export const care = {
       return { ...b, alerts: [{ id: uid(), patientId, at: new Date().toISOString(), level: "urgent", message, notified }, ...b.alerts] };
     });
   },
-  async acknowledgeAlert(patientId: string, id: string) {
-    await update(patientId, (b) => ({ ...b, alerts: b.alerts.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)) }));
+  /** Checking an alert off needs a note saying how the situation was resolved. */
+  async acknowledgeAlert(patientId: string, id: string, resolution: string, by: string) {
+    const note = resolution.trim();
+    if (!note) throw new Error("Write how the situation was resolved before marking it handled.");
+    await update(patientId, (b) => ({
+      ...b,
+      alerts: b.alerts.map((a) =>
+        a.id === id ? { ...a, acknowledged: true, resolution: note, resolvedBy: by, resolvedAt: new Date().toISOString() } : a,
+      ),
+    }));
   },
   async answerQuestion(patientId: string, id: string, answer: string, by: string) {
     await update(patientId, (b) => ({
