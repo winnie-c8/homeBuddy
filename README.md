@@ -1,62 +1,102 @@
-# Overview
-This Project was built for the Women in Engineering Hackathon at the University of Waterloo in 2026
-
 # homeBuddy 🏡
 
-> Bringing the reassurance of a nursing home's daily check-in to seniors aging at home.  
-> *Built for the PointClickCare Challenge at the Women in Engineering (WiE) Hackathon 2026.*
+**Bringing the reassurance of a nursing home's daily check-in to seniors aging at home.**
+
+Built for the **PointClickCare Challenge** at the **Women in Engineering (WiE) Hackathon 2026**, University of Waterloo.
+
+> ⚠️ **Safety notice:** homeBuddy is an assistive monitoring and communication tool, not a medical diagnosis device. The interface always reminds seniors to call **911** in an emergency.
 
 ---
 
-## 💡 The Problem & Idea
+## 💡 The Problem
 
-Seniors living independently often face slow-building health issues—missed meals, worsening fatigue, dehydration, or skipped medications—that go unnoticed until an emergency room visit. Traditional health portals require typing and navigating complex digital interfaces that seniors find frustrating or inaccessible.
+Seniors living independently often face slow-building health issues, such as missed meals, growing fatigue, dehydration or skipped medications. These go unnoticed until they end in an emergency room visit.
 
-**homeBuddy** bridges the gap between seniors, clinicians, and families through voice:
+Existing health portals don't help much: they expect seniors to type, log in and navigate complex screens, which many find frustrating or inaccessible.
 
-1. **Clinicians prescribe daily check-ins**: Set customized questions tailored to the senior's conditions (e.g., dialysis recovery, appetite, pain levels) and define what constitutes a warning flag.
-2. **Seniors just talk**: An empathetic AI companion, **Rosie**, speaks with the senior over a natural voice call. No typing or screens needed.
-3. **Automated clinical triage**: Post-call transcripts are analyzed and classified into **Green, Yellow, or Red** safety statuses based on clinician rules.
-4. **Actionable alerts**: Clinicians receive notifications quoting the senior's exact words, allowing them to intervene early and log handled resolutions.
-5. **Family peace of mind**: Family members see daily status updates and know immediately when the care team is on top of an issue.
+## 🌱 Our Solution
 
-> **Safety Notice:** homeBuddy is an assistive monitoring and communication tool, not a medical diagnosis device. The interface always reminds seniors to dial 911 for emergencies.
+homeBuddy connects seniors, clinicians and families through a simple daily voice call.
 
----
+1. **Clinicians prescribe the check-in.** They set questions tailored to each senior's conditions (e.g. dialysis recovery, appetite, pain levels) and define which answers should raise a flag.
+2. **Seniors just talk.** Rosie, a warm AI companion, asks those questions over a natural voice call. No typing and no menus to navigate.
+3. **Calls are triaged automatically.** After each call, the transcript is analyzed and given a **Green**, **Yellow** or **Red** status based on the clinician's rules.
+4. **Clinicians get actionable alerts.** Each alert quotes the senior's own words, so the care team can step in early and log how they handled it.
+5. **Families stay in the loop.** Family members see the daily status and know right away when the care team is already on an issue.
 
 ## ✨ Features
 
-- **Conversational Voice Check-In (`/senior`)**
-  - Powered by low-latency Google Gemini Live audio.
-  - Rosie asks the clinician's prescribed daily questions conversationally, re-asks unclear answers, and greets seniors based on local time.
-  - Live transcript updates in real-time and transitions into an accessible post-call summary.
-- **Clinician Care Hub (`/care`)**
-  - High-level status overview of all assigned seniors categorized by alert severity.
-  - Dedicated patient detail view (`/care/:patientId`) featuring historical vitals charts, care plan management, and question prescribing.
-  - Mandatory resolution workflow: marking an alert handled requires logging the care team's action steps.
-- **Family Dashboard (`/family`)**
-  - Read-only shared view showing today's wellness check status and care team notes.
-  - Secure patient linking via unique invite codes.
-- **Accessible Design**
-  - High-contrast, warm, organic illustrations and Atkinson Hyperlegible typography designed specifically for older eyes and care providers.
+### 🗣️ Voice Check-In — `/senior`
+- Low-latency, natural conversation powered by Google Gemini Live audio
+- Rosie greets seniors based on their local time, asks the prescribed questions conversationally and re-asks when an answer is unclear
+- Optional per-patient **Short call** mode: just a greeting plus the care team's questions
+- Live transcript during the call, followed by an easy-to-read summary
 
----
+### 🩺 Clinician Care Hub — `/care`
+- Overview of all assigned seniors, sorted by alert severity
+- Patient detail page (`/care/:patientId`) with vitals history charts, care plan management and question prescribing
+- Required resolution notes: an alert can only be marked handled once the care team logs what they did
+
+### 👨‍👩‍👧 Family Dashboard — `/family`
+- Read-only view of today's check-in status and care team notes
+- Secure linking to a senior through a unique invite code
+
+### ♿ Accessible by Design
+- High-contrast colours and warm, friendly illustrations
+- Atkinson Hyperlegible typography, designed for readability by older adults and busy care providers
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [TanStack Start v1](https://tanstack.com/start) (React 19, TypeScript, Vite)
-- **Styling**: Tailwind CSS v4, Radix UI primitives, Atkinson Hyperlegible font
-- **AI & Voice Engine**:
-  - **Live Voice**: Google Gemini 2.5 Live Multimodal API via server WebSocket relay (`/api/live`)
-  - **Check-in Extraction**: Google Gemini Flash structured summarization
-- **Backend & Database**: Supabase (PostgreSQL with Row Level Security, Auth with role separation)
-- **Data Visualization**: Recharts
-- **Testing**: Vitest, React Testing Library
-
----
+| Layer | Tools |
+| --- | --- |
+| Framework | TanStack Start v1 (React 19, TypeScript, Vite) |
+| Styling | Tailwind CSS v4, Radix UI primitives, Atkinson Hyperlegible |
+| Live voice | Google Gemini 2.5 Live API via a server WebSocket relay (`/api/live`) |
+| Check-in analysis | Google Gemini Flash (structured summarization) |
+| Backend & database | Supabase (PostgreSQL with Row Level Security, Auth with role separation) |
+| Charts | Recharts |
+| Testing | Vitest, React Testing Library |
 
 ## 🚀 Getting Started
 
 ### Prerequisites
+- [Bun](https://bun.sh)
+- A [Supabase](https://supabase.com) project
+- A [Google Gemini API key](https://aistudio.google.com/app/apikey)
+- A browser with microphone access (Chrome recommended)
 
-- [Bun](https://bun
+### Setup
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/winnie-c8/wie-hackathon.git
+cd wie-hackathon
+
+# 2. Install dependencies
+bun install
+
+# 3. Add your environment variables (see below)
+
+# 4. Start the dev server
+bun run dev
+
+# 5. Run tests
+bun run test
+```
+
+### Environment variables
+
+Create a `.env` file in the project root:
+
+```bash
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+GEMINI_API_KEY=your-gemini-api-key
+```
+
+## 👩‍💻 Team
+
+Built in 24 hours by:
+- **Winnie Chen** ([@winnie-c8](https://github.com/winnie-c8))
+- **Kaitlyn** ([@kaitlynlaichan](https://github.com/kaitlynlaichan))
+- **Caitlin** ([@clim08-source](https://github.com/clim08-source))
