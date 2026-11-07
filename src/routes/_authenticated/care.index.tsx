@@ -78,6 +78,7 @@ function CareDashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-clinic-bg">
+      <img src={careCircles} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
       <main className="relative mx-auto max-w-6xl px-5 pb-24 pt-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
