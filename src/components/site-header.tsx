@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import logo from "@/assets/homebuddy-logo.svg";
 import { supabase } from "@/integrations/supabase/client";
 import { clearCare } from "@/lib/care-store";
-import { PREVIEW_ALL_PAGES, ROLE_LABELS, roleHome, useAccount } from "@/lib/auth";
+import { ROLE_LABELS, roleHome, useAccount } from "@/lib/auth";
 
 export function SiteHeader() {
   const account = useAccount();
@@ -31,16 +31,6 @@ export function SiteHeader() {
         <nav className="flex items-center gap-1 text-sm">
           {account ? (
             <>
-              {PREVIEW_ALL_PAGES && (
-                <span className="mr-2 flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">
-                  Test:
-                  {(["/senior", "/family", "/care"] as const).map((to) => (
-                    <Link key={to} to={to} className="rounded-full px-2 py-0.5 hover:bg-secondary hover:text-foreground" activeProps={{ className: "bg-secondary text-foreground" }}>
-                      {to.slice(1)}
-                    </Link>
-                  ))}
-                </span>
-              )}
               <Link
                 to={roleHome(account.role)}
                 className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
