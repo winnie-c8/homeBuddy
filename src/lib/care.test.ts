@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
+import { alertStage, alertsForCheckIn, saidMoreThanYesNo, escalations, questionHistory, isNumberFlagged, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, followUpForFamily, isAnswerFlagged, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -246,4 +246,24 @@ describe("yellow that keeps happening turns red (#10)", () => {
   });
   it("lists a question's answers oldest first for the chart", () =>
     expect(questionHistory({ ...p, checkIns: [dialysis(6, "no"), dialysis(5, "yes")] }, "Did you do your dialysis today?").map((x) => x.answer)).toEqual(["yes", "no"]));
+});
+
+describe("number questions", () => {
+  const water = { text: "How many glasses of water today?", kind: "number" as const, unit: "glasses", below: 6 };
+  const heard = (said: string, number: number | null) => [{ question: water.text, said, answer: "unclear" as const, number }];
+  it("flags below the limit and keeps the amount", () => {
+    const [a] = checkAnswers([water], heard("About four", 4));
+    expect(a).toMatchObject({ value: 4, flagged: true });
+    expect(findings({ ...ok, answers: [a!] })[0]!.clinician).toBe('4 glasses for "How many glasses of water today?" (flag below 6). They said: "About four"');
+  });
+  it("doesn't flag at or above the limit", () => expect(checkAnswers([water], heard("Six", 6))[0]!.flagged).toBe(false));
+  it("flags above an upper limit", () => expect(isNumberFlagged(160, undefined, 140)).toBe(true));
+  it("no number heard counts as unclear and is flagged", () =>
+    expect(checkAnswers([water], heard("I don't know", null))[0]).toMatchObject({ value: null, answer: "unclear", flagged: true }));
+  it("no limits means just record it", () => expect(isNumberFlagged(null)).toBe(false));
+  it("turns red after N low days in a row", () => {
+    const p = { ...createSampleState().patients.find((x) => x.id === "margaret")!, checkIns: [] as CheckIn[] };
+    const day = (d: number, n: number): CheckIn => ({ ...ok, id: `w${d}`, date: new Date(2026, 10, d, 10).toISOString(), answers: checkAnswers([{ ...water, redAfter: 2 }], heard(String(n), n)) });
+    expect(escalations({ ...p, checkIns: [day(6, 3), day(7, 4)] })[0]!.clinician).toBe('"How many glasses of water today?" flagged 2 times in a row (last answer: 4 glasses)');
+  });
 });

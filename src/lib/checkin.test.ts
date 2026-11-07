@@ -11,7 +11,7 @@ const SUMMARY: CheckInSummary = {
   fall: false,
   urgent: [],
   questions: [],
-  answers: [{ question: "Is your ankle swelling better?", said: "No, it's worse today", answer: "no" }],
+  answers: [{ question: "Is your ankle swelling better?", said: "No, it's worse today", answer: "no", number: null }],
   summary: "Margaret took her metformin and ate breakfast.",
 };
 
@@ -82,7 +82,7 @@ describe("care-team answers", () => {
   it("returns each answer with the senior's words and a yes/no answer", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => okResponse()));
     const result = await runSummary({ ...DATA, clinicianQuestions: ["Is your ankle swelling better?"] });
-    expect(result.answers).toEqual([{ question: "Is your ankle swelling better?", said: "No, it's worse today", answer: "no" }]);
+    expect(result.answers).toEqual([{ question: "Is your ankle swelling better?", said: "No, it's worse today", answer: "no", number: null }]);
   });
 
   it("sends the care-team questions to the summary model", async () => {

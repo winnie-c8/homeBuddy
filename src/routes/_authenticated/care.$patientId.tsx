@@ -261,11 +261,16 @@ function AskRosie({ p }: { p: Patient }) {
   const [flagIf, setFlagIf] = useState<"" | FlagIf>("");
   const [daily, setDaily] = useState(false);
   const [redAfter, setRedAfter] = useState("");
+  const [kind, setKind] = useState<"yesno" | "number">("yesno");
+  const [unit, setUnit] = useState("");
+  const [below, setBelow] = useState("");
+  const [above, setAbove] = useState("");
+  const hasRule = kind === "yesno" ? !!flagIf : below !== "" || above !== "";
   const { account } = useRouteContext({ from: "/_authenticated" });
   const list = clinicianQuestionsOf(p).reverse();
   return (
     <Panel title={`Ask ${p.preferredName} a question`}>
-      <p className="text-sm">Rosie asks these as yes/no questions and brings back {p.preferredName}'s words. Your "flag if" rule decides the colour, not the AI.</p>
+      <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI.</p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
@@ -273,12 +278,37 @@ function AskRosie({ p }: { p: Patient }) {
           if (!text.trim()) return;
           setBusy(true);
           clinicianQuestions
-            .add(p.id, text.trim(), account.displayName, { flagIf: flagIf || undefined, daily, redAfter: redAfter ? Number(redAfter) : undefined })
+            .add(
+              p.id,
+              text.trim(),
+              account.displayName,
+              kind === "number"
+                ? { kind, unit: unit.trim() || undefined, below: below === "" ? undefined : Number(below), above: above === "" ? undefined : Number(above), daily, redAfter: redAfter ? Number(redAfter) : undefined }
+                : { flagIf: flagIf || undefined, daily, redAfter: redAfter ? Number(redAfter) : undefined },
+            )
             .then(() => setText(""))
             .finally(() => setBusy(false));
         }}
       >
         <Input className="min-w-64 flex-1 rounded-none bg-card" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type question here… e.g. Did you do your dialysis today?" />
+        <div className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm" role="group" aria-label="Answer type">
+          Answer:
+          {(["yesno", "number"] as const).map((v) => (
+            <button key={v} type="button" aria-pressed={kind === v} onClick={() => setKind(v)} className={`px-3 py-0.5 font-bold ${kind === v ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+              {v === "yesno" ? "yes / no" : "number"}
+            </button>
+          ))}
+        </div>
+        {kind === "number" ? (
+          <div className="flex flex-wrap items-center gap-2 bg-card px-3 py-1.5 text-sm" role="group" aria-label="Number rule">
+            Unit
+            <Input className="h-8 w-24 rounded-none" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="glasses" />
+            Flag if below
+            <Input className="h-8 w-16 rounded-none" type="number" value={below} onChange={(e) => setBelow(e.target.value)} />
+            or above
+            <Input className="h-8 w-16 rounded-none" type="number" value={above} onChange={(e) => setAbove(e.target.value)} />
+          </div>
+        ) : (
         <div className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm" role="group" aria-label="Flag if answer is">
           Flag if answer is:
           {(["yes", "no"] as const).map((v) => (
@@ -294,7 +324,8 @@ function AskRosie({ p }: { p: Patient }) {
           ))}
           {!flagIf && <span className="text-muted-foreground">(never, just record)</span>}
         </div>
-        {flagIf && (
+        )}
+        {hasRule && (
           <label className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm">
             Turns red:
             <select className="bg-background px-2 py-1" value={redAfter} onChange={(e) => setRedAfter(e.target.value)}>
@@ -319,8 +350,10 @@ function AskRosie({ p }: { p: Patient }) {
               <p className="text-lg">“{q.text}”</p>
               <AnswerDots p={p} question={q.text} />
               <p className="text-xs text-muted-foreground">
-                {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
-                {q.flagIf && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} in a row` : "Never red"}`}
+                {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.kind === "number"
+                  ? `Number${q.unit ? ` (${q.unit})` : ""} · ${[q.below !== undefined ? `flag below ${q.below}` : "", q.above !== undefined ? `flag above ${q.above}` : ""].filter(Boolean).join(", ") || "no flag"}`
+                  : q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
+                {(q.flagIf || q.below !== undefined || q.above !== undefined) && ` · ${q.redAfter === 1 ? "Red right away" : q.redAfter ? `Red after ${q.redAfter} in a row` : "Never red"}`}
               </p>
               {q.answer ? (
                 <p className="mt-2 text-sm"><span className="font-bold">{p.preferredName} said:</span> {q.answer}</p>
@@ -351,7 +384,11 @@ function AnswerDots({ p, question }: { p: Patient; question: string }) {
       <div className="flex items-end gap-2">
         {h.map((x, i) => (
           <div key={i} className="flex flex-col items-center gap-1" title={`${format(new Date(x.date), "MMM d")}: ${x.answer}${x.said ? ` — "${x.said}"` : ""}`}>
-            <span className={`block size-4 rounded-full ${dot(x)}`} />
+            {x.value !== null ? (
+              <span className={`px-1 text-xs font-bold ${x.flagged ? "bg-status-red text-primary-foreground" : "bg-status-green text-primary-foreground"}`}>{x.value}</span>
+            ) : (
+              <span className={`block size-4 rounded-full ${dot(x)}`} />
+            )}
             <span className="text-[10px] text-muted-foreground">{format(new Date(x.date), "EEE")}</span>
           </div>
         ))}

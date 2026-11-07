@@ -27,7 +27,7 @@ export type CheckInSummary = {
   questions: string[];
   summary: string;
   /** One entry per care-team question: the senior's own words and their yes/no answer. Flags are decided by rules in care.ts, not here. */
-  answers: { question: string; said: string; answer: "yes" | "no" | "unclear" }[];
+  answers: { question: string; said: string; answer: "yes" | "no" | "unclear"; number: number | null }[];
 };
 
 const schema = {
@@ -60,8 +60,13 @@ const schema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["question", "said", "answer"],
-        properties: { question: { type: "string" }, said: { type: "string" }, answer: { type: "string", enum: ["yes", "no", "unclear"] } },
+        required: ["question", "said", "answer", "number"],
+        properties: {
+          question: { type: "string" },
+          said: { type: "string" },
+          answer: { type: "string", enum: ["yes", "no", "unclear"] },
+          number: { type: ["number", "null"], description: "If the question asks for an amount, the number the senior gave (e.g. 6 for 'six glasses'); otherwise null. Never guess." },
+        },
       },
     },
   },

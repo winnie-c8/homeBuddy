@@ -17,6 +17,11 @@ export type ClinicianQuestion = {
   flagIf?: FlagIf;
   /** Turns red when flagged this many times in a row (1 = right away). Missing = never turns red. */
   redAfter?: number;
+  /** "number" questions ask for an amount in a unit and flag below/above limits. Missing = yes/no. */
+  kind?: "yesno" | "number";
+  unit?: string;
+  below?: number;
+  above?: number;
   /** Ask on every call instead of once. */
   daily?: boolean;
   /** One-off questions: set once answered, and the question is done. Daily questions keep the latest answer here too. */
@@ -39,7 +44,7 @@ export function clinicianContext(p: Patient): string {
   const pending = pendingClinicianQuestions(p);
   if (!pending.length) return "";
   return `Questions from the care team to ask today — weave each in naturally ("Oh, your care team wanted me to ask…"), but ask it plainly and get a clear answer:\n- ${pending
-    .map((q) => `${q.text} (from ${q.askedBy}; get a clear yes or no)`)
+    .map((q) => `${q.text} (from ${q.askedBy}; ${q.kind === "number" ? `get a number${q.unit ? ` in ${q.unit}` : ""}` : "get a clear yes or no"})`)
     .join("\n- ")}`;
 }
 
@@ -65,10 +70,11 @@ async function updateList(patientId: string, fn: (l: ClinicianQuestion[]) => Cli
 }
 
 export const clinicianQuestions = {
-  add: (patientId: string, text: string, askedBy: string, rule: { flagIf?: FlagIf | undefined; daily?: boolean; redAfter?: number | undefined } = {}) =>
+  add: (patientId: string, text: string, askedBy: string, rule: { flagIf?: FlagIf | undefined; daily?: boolean; redAfter?: number | undefined; kind?: "yesno" | "number"; unit?: string | undefined; below?: number | undefined; above?: number | undefined } = {}) =>
     updateList(patientId, (l) => [
       ...l,
-      { id: Math.random().toString(36).slice(2, 10), text, askedBy, createdAt: new Date().toISOString(), ...(rule.flagIf ? { flagIf: rule.flagIf } : {}), ...(rule.daily ? { daily: true } : {}), ...(rule.flagIf && rule.redAfter ? { redAfter: rule.redAfter } : {}) },
+      { id: Math.random().toString(36).slice(2, 10), text, askedBy, createdAt: new Date().toISOString(), ...(rule.flagIf ? { flagIf: rule.flagIf } : {}), ...(rule.daily ? { daily: true } : {}), ...(rule.redAfter && (rule.flagIf || rule.below !== undefined || rule.above !== undefined) ? { redAfter: rule.redAfter } : {}),
+        ...(rule.kind === "number" ? { kind: "number" as const, ...(rule.unit ? { unit: rule.unit } : {}), ...(rule.below !== undefined ? { below: rule.below } : {}), ...(rule.above !== undefined ? { above: rule.above } : {}) } : {}) },
     ]),
   remove: (patientId: string, id: string) => updateList(patientId, (l) => l.filter((q) => q.id !== id)),
   saveAnswers: (patientId: string, answers: ClinicianAnswer[]) =>

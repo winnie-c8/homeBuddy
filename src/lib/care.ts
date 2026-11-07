@@ -35,8 +35,21 @@ export type QuestionAnswer = {
   flagIf?: FlagIf | undefined;
   /** Turns red when flagged this many times in a row (1 = right away). No value = never turns red. */
   redAfter?: number | undefined;
+  /** Number questions: the amount reported, its unit, and the clinician's limits. */
+  kind?: "yesno" | "number" | undefined;
+  value?: number | null | undefined;
+  unit?: string | undefined;
+  below?: number | undefined;
+  above?: number | undefined;
   flagged: boolean;
 };
+
+/** The rule for number questions: flag below/above the clinician's limits; no number heard counts as unclear. */
+export function isNumberFlagged(value: number | null, below?: number, above?: number): boolean {
+  if (below === undefined && above === undefined) return false;
+  if (value === null) return true;
+  return (below !== undefined && value < below) || (above !== undefined && value > above);
+}
 
 /**
  * The rule for care-team questions. Deterministic: same answer + same rule = same result.
@@ -49,14 +62,29 @@ export function isAnswerFlagged(answer: YesNo, flagIf: FlagIf | undefined): bool
 
 /** Match the AI's answers to the questions that were asked, and apply each question's rule. */
 export function checkAnswers(
-  asked: { text: string; flagIf?: FlagIf | undefined; redAfter?: number | undefined }[],
-  heard: { question: string; said: string; answer: YesNo }[],
+  asked: {
+    text: string;
+    flagIf?: FlagIf | undefined;
+    redAfter?: number | undefined;
+    kind?: "yesno" | "number" | undefined;
+    unit?: string | undefined;
+    below?: number | undefined;
+    above?: number | undefined;
+  }[],
+  heard: { question: string; said: string; answer: YesNo; number?: number | null | undefined }[],
 ): QuestionAnswer[] {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
   return asked.map((q) => {
     const h = heard.find((a) => norm(a.question) === norm(q.text));
     const said = h?.said.trim() ?? "";
     // Not asked or no words captured counts as unclear.
+    if (q.kind === "number") {
+      const value = h && said && typeof h.number === "number" ? h.number : null;
+      return {
+        question: q.text, said, answer: value === null ? "unclear" : "yes", kind: "number", value, unit: q.unit, below: q.below, above: q.above,
+        redAfter: q.redAfter, flagged: isNumberFlagged(value, q.below, q.above),
+      };
+    }
     const answer: YesNo = h && said ? h.answer : "unclear";
     return { question: q.text, said, answer, flagIf: q.flagIf, redAfter: q.redAfter, flagged: isAnswerFlagged(answer, q.flagIf) };
   });
@@ -193,7 +221,11 @@ export function findings(c: CheckIn, name = "Patient"): Finding[] {
     const quote = saidMoreThanYesNo(a.said) ? ` They said: "${a.said.trim()}"` : "";
     // The clinician can make a question turn red right away (e.g. skipping dialysis even once).
     const level: Finding["status"] = a.redAfter === 1 ? "red" : "yellow";
-    if (a.answer === "unclear")
+    if (a.kind === "number" && typeof a.value === "number") {
+      const unit = a.unit ? ` ${a.unit}` : "";
+      const limit = [a.below !== undefined ? `below ${a.below}` : "", a.above !== undefined ? `above ${a.above}` : ""].filter(Boolean).join(" or ");
+      add(`question:${q}`, level, `${a.value}${unit} for "${q}" (flag ${limit})${quote ? `.${quote}` : ""}`, `${name} reported ${a.value}${unit} for "${q}"`);
+    } else if (a.answer === "unclear")
       add(`question:${q}`, level, `No clear answer to "${q}"${quote ? `.${quote}` : ""}`, `We couldn't get a clear answer from ${name} about "${q}"`);
     else add(`question:${q}`, level, `Answered ${a.answer} to "${q}"${quote ? `.${quote}` : ""}`, `${name} answered ${a.answer} to "${q}"`);
   }
@@ -277,7 +309,7 @@ export function escalations(p: Patient): Finding[] {
       out.push({
         key: `question_streak:${a.question}`,
         status: "red",
-        clinician: `"${a.question}" flagged ${n} times in a row (last answer: ${a.answer})`,
+        clinician: `"${a.question}" flagged ${n} times in a row (last answer: ${a.kind === "number" && typeof a.value === "number" ? `${a.value}${a.unit ? ` ${a.unit}` : ""}` : a.answer})`,
         family: `${p.preferredName}'s answer to "${a.question}" has needed attention ${n} times in a row`,
       });
   }
@@ -285,10 +317,14 @@ export function escalations(p: Patient): Finding[] {
 }
 
 /** Every recorded answer to one clinician question, oldest first (for the yes/no chart). */
-export function questionHistory(p: Patient, question: string): { date: string; answer: YesNo; flagged: boolean; said: string }[] {
+export function questionHistory(p: Patient, question: string): { date: string; answer: YesNo; flagged: boolean; said: string; value: number | null }[] {
   return [...p.checkIns]
     .sort((a, b) => a.date.localeCompare(b.date))
-    .flatMap((c) => (c.answers ?? []).filter((a) => a.question === question).map((a) => ({ date: c.date, answer: a.answer, flagged: a.flagged, said: a.said })));
+    .flatMap((c) =>
+      (c.answers ?? [])
+        .filter((a) => a.question === question)
+        .map((a) => ({ date: c.date, answer: a.answer, flagged: a.flagged, said: a.said, value: typeof a.value === "number" ? a.value : null })),
+    );
 }
 
 /** A patient's colour is the worst colour of their latest day, so a later "I'm fine" call can't hide a fall. */
