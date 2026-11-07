@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+const GEMINI_TEXT_MODEL = "gemini-flash-latest";
+
 const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
   meds: z.array(z.string().max(120)).max(30),
@@ -47,27 +49,38 @@ const schema = {
 
 /** Turns a check-in call transcript into structured answers for the care team. */
 export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSummary> {
-    const { generateResponse } = await import("@lovable.dev/ai-gateway");
+    const key = process.env["GEMINI_API_KEY"];
+    if (!key) throw new Error("GEMINI_API_KEY is not set");
     const text = data.transcript.map((t) => `${t.role === "user" ? "Senior" : "Companion"}: ${t.text}`).join("\n");
-    const res = await generateResponse({
-      model: "openai/gpt-6-astra",
-      instructions:
-        "Extract a daily check-in record from a phone call between an AI companion and an older adult. " +
-        "Only record what the senior actually said; use 'unclear' or null when not discussed. " +
-        "List every expected medication. Do not add medical advice.",
-      input: [
-        {
-          role: "user",
-          content: `Expected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}`,
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT_MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            {
+              text:
+                "Extract a daily check-in record from a phone call between an AI companion and an older adult. " +
+                "Only record what the senior actually said; use 'unclear' or null when not discussed. " +
+                "List every expected medication. Do not add medical advice.",
+            },
+          ],
         },
-      ],
-      text: { format: { type: "json_schema", name: "check_in", schema, strict: true } },
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `Expected medications: ${data.meds.join(", ") || "none"}\n\nTranscript:\n${text || "(empty)"}` }],
+          },
+        ],
+        generationConfig: { responseMimeType: "application/json", responseJsonSchema: schema },
+      }),
     });
-    const out = res.output
-      .flatMap((item) =>
-        item.type === "message" ? item.content.flatMap((p) => (p.type === "output_text" ? [p.text] : [])) : [],
-      )
-      .join("");
+    if (!res.ok) {
+      console.error("Gemini summary failed", res.status, (await res.text()).slice(0, 500));
+      throw new Error("Summary service failed");
+    }
+    const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+    const out = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
     return JSON.parse(out) as CheckInSummary;
 }
 

@@ -32,7 +32,7 @@ use the editor.
 ## Project rules
 - Each senior's record (plan, contacts, sharing, check-ins, questions, alerts) is one `patients.state` JSON row read/written via `src/lib/care-store.ts`; family/care team link through `join_patient` invite codes into `patient_members`, and RLS shows family the row only while the senior shares with them; why: one record per senior keeps the existing UI model while access is enforced by the database.
 - Status (green/yellow/red) and alert routing rules live only in `src/lib/care.ts` with tests in `care.test.ts`; why: one source of truth for safety rules.
-- Voice calls use the persistent `/api/live` relay (`src/lib/live-relay.server.ts`, wired in `src/server.ts` and `live-vite-plugin.ts`); the browser sends patient context in `app.start`; why: Live sessions need an open control socket for the whole call.
+- Voice calls use the persistent `/api/live` relay (`src/lib/live-relay.server.ts`, wired in `src/server.ts` and `live-vite-plugin.ts`) proxying to Google Gemini Live with the server-only `GEMINI_API_KEY`; summaries call Gemini directly too; why: the team chose its own Gemini key, and the key must never reach the browser.
 - Post-call transcripts are structured by `runSummary` in `src/lib/checkin.functions.ts`; why: keeps AI extraction server-side and testable.
 - Accounts use the connected Supabase auth; profile rows come from the `handle_new_user` trigger, roles from signup metadata or a one-time `choose_role` call (Google/phone users), roles live only in `user_roles`, and role pages sit under `src/routes/_authenticated/` gated by `requireRole` in `src/lib/auth.ts`; why: roles must never be user-editable.
 
