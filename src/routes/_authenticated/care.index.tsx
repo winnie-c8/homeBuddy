@@ -34,65 +34,96 @@ function CareDashboard() {
   patients.forEach((p) => counts[patientStatus(p)]++);
   const openAlerts = state.alerts.filter((a) => !a.acknowledged);
 
-  return (
-    <main className="mx-auto max-w-6xl px-5 pb-24 pt-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-muted-foreground">{account.displayName} · Today</p>
-          <h1 className="text-4xl font-semibold">Your patients</h1>
-        </div>
-        <div className="flex gap-3">
-          {(["red", "yellow", "green"] as Status[]).map((s) => (
-            <div key={s} className="flex items-center gap-2 rounded-full bg-card px-4 py-2 shadow-[var(--shadow-soft)]">
-              <StatusDot status={s} /> <span className="font-bold">{counts[s]}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+  const cardStyle: Record<Status, { card: string; box: string; title: string; label: string }> = {
+    red: { card: "bg-risk", box: "bg-risk-soft", title: "text-risk-ink", label: "HIGH RISK" },
+    yellow: { card: "bg-watch", box: "bg-watch-soft", title: "text-foreground", label: "Watch" },
+    green: { card: "bg-card", box: "bg-update-soft", title: "text-foreground", label: "Updates" },
+  };
+  const dot: Record<Status, string> = { red: "bg-risk-ink", yellow: "bg-watch", green: "bg-calm-dot" };
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px]">
-        <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-soft)]">
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-clinic-bg">
+      <svg aria-hidden="true" viewBox="0 0 1440 1024" preserveAspectRatio="xMidYMid slice" className="pointer-events-none absolute inset-0 size-full" fill="none">
+        <g className="stroke-clinic-swirl" strokeWidth="38" strokeLinecap="round">
+          <path d="M-40 140 C 200 60, 420 80, 600 40 S 900 -20, 1000 30" />
+          <path d="M-60 360 C 120 260, 380 300, 300 420 S 40 520, 160 600 S 560 640, 760 560" />
+          <path d="M880 760 C 1040 640, 1260 680, 1500 600" />
+          <path d="M1120 1060 C 1180 900, 1360 860, 1480 900" />
+        </g>
+      </svg>
+      <main className="relative mx-auto max-w-6xl px-5 pb-24 pt-10">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xl">Welcome, {account.displayName}</p>
+            <h1 className="text-6xl font-bold md:text-7xl">Your Patients</h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <a href="#add-patient" className="rounded-2xl bg-card px-4 py-2 text-xl shadow-[var(--shadow-soft)] hover:bg-muted">Add Patient</a>
+            <div className="flex items-center gap-5 rounded-2xl bg-card px-4 py-2 text-xl shadow-[var(--shadow-soft)]">
+              {(["red", "yellow", "green"] as Status[]).map((s) => (
+                <span key={s} className="flex items-center gap-2">
+                  <span className={`size-7 rounded-full ${dot[s]}`} aria-label={s} /> {counts[s]}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <section className="mt-12 grid gap-8 md:grid-cols-2">
           {patients.length === 0 && (
-            <p className="p-8 text-muted-foreground">No patients yet. Ask a patient for their homeBuddy code and add it on the right.</p>
+            <p className="bg-card p-8 text-muted-foreground shadow-[var(--shadow-soft)] md:col-span-2">No patients yet. Ask a patient for their homeBuddy code and add them below.</p>
           )}
           {patients.map((p) => {
             const last = latestCheckIn(p);
+            const status = patientStatus(p);
+            const st = cardStyle[status];
+            const alert = openAlerts.find((a) => a.patientId === p.id);
             const qs = state.questions.filter((q) => q.patientId === p.id && !q.answer).length;
+            const meds = adherence(p.checkIns.slice(-14));
             return (
               <Link
                 key={p.id}
                 to="/care/$patientId"
                 params={{ patientId: p.id }}
-                className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border px-6 py-5 transition-colors last:border-0 hover:bg-muted md:grid-cols-[1.4fr_1fr_0.7fr_auto]"
+                className={`block p-8 shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-1 ${st.card}`}
               >
-                <div>
-                  <p className="text-lg font-bold">{p.name}</p>
-                  <p className="text-sm text-muted-foreground">{p.age} · {p.conditions.join(", ")}</p>
+                <div className="flex items-center gap-8">
+                  <div className="grid size-28 shrink-0 place-items-center bg-muted text-4xl font-bold text-muted-foreground">
+                    {p.name.split(" ").map((w) => w[0]).join("").slice(0, 2)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-4xl font-bold">{p.name}</p>
+                    <p className="mt-1 italic">{p.age}yo{p.conditions.length ? `, ${p.conditions.join(", ")}` : ""}</p>
+                    <p className="mt-1 italic">
+                      {last ? `${last.answered ? "checked in" : "missed call"} ${formatDistanceToNow(new Date(last.date), { addSuffix: true })}` : "no calls yet"}
+                    </p>
+                  </div>
                 </div>
-                <p className="hidden text-sm text-muted-foreground md:block">
-                  {last ? `${last.answered ? "Checked in" : "Missed call"} ${formatDistanceToNow(new Date(last.date), { addSuffix: true })}` : "No calls yet"}
-                </p>
-                <p className="hidden text-sm md:block">
-                  <span className="font-bold">{adherence(p.checkIns.slice(-14)) ?? "—"}%</span> meds
-                  {qs > 0 && (
-                    <span className="ml-3 inline-flex items-center gap-1 text-accent"><MessageCircleQuestion className="size-4" />{qs}</span>
-                  )}
-                </p>
-                <StatusBadge status={patientStatus(p)} />
+                <div className={`mt-5 px-5 py-3 shadow-[var(--shadow-soft)] ${st.box}`}>
+                  <p className={`flex items-center gap-2 text-xl font-bold ${st.title}`}>
+                    {status !== "green" && <span aria-hidden="true">⚠️</span>}
+                    {st.label}
+                  </p>
+                  <p className="mt-1">{alert?.message ?? last?.summary ?? "No check-ins yet."}</p>
+                  <p className="mt-2 flex items-center gap-3 text-sm">
+                    <span><span className="font-bold">{meds ?? "—"}%</span> meds</span>
+                    {qs > 0 && <span className="inline-flex items-center gap-1"><MessageCircleQuestion className="size-4" />{qs} question{qs > 1 ? "s" : ""}</span>}
+                  </p>
+                </div>
               </Link>
             );
           })}
         </section>
 
-        <aside>
-          <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold"><BellRing className="size-5" /> Alerts</h2>
-          <div className="space-y-3">
-            {openAlerts.length === 0 && <p className="text-muted-foreground">No open alerts.</p>}
+        <section className="mt-12">
+          <h2 className="mb-4 flex items-center gap-2 text-3xl font-bold"><BellRing className="size-6" /> Alerts</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {openAlerts.length === 0 && <p className="bg-card p-5 shadow-[var(--shadow-soft)]">No open alerts.</p>}
             {openAlerts.map((a) => {
               const p = state.patients.find((x) => x.id === a.patientId);
               return (
-                <div key={a.id} className={`rounded-2xl p-4 ${a.level === "urgent" ? "bg-status-red-soft" : "bg-status-yellow-soft"}`}>
-                  <p className="font-bold">{p?.name}</p>
+                <div key={a.id} className={`p-5 shadow-[var(--shadow-soft)] ${a.level === "urgent" ? "bg-risk-soft" : "bg-watch-soft"}`}>
+                  <p className="text-lg font-bold">{p?.name}</p>
                   <p>{a.message}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(a.at), { addSuffix: true })} · Notified {a.notified.join(", ")}
@@ -104,9 +135,12 @@ function CareDashboard() {
               );
             })}
           </div>
+        </section>
+
+        <section id="add-patient" className="mt-12 max-w-xl scroll-mt-24 [&_form]:rounded-none [&_form]:border-0 [&_form]:p-8 [&_form]:shadow-[var(--shadow-soft)] [&_h3]:text-3xl [&_h3]:font-bold">
           <JoinPatientCard kind="care_team" />
-        </aside>
-      </div>
-    </main>
+        </section>
+      </main>
+    </div>
   );
 }
