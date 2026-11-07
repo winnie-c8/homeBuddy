@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// Tried in order; Google often answers 503 "high demand" on a single model.
-const GEMINI_TEXT_MODELS = ["gemini-flash-latest", "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
+// Tried in order. gemini-flash-lite-latest answers in ~1s; gemini-flash-latest has been
+// hanging until timeout, so it is only a last resort. gemini-2.5-flash-lite is gone for
+// new accounts (404) and was dropped.
+const GEMINI_TEXT_MODELS = ["gemini-flash-lite-latest", "gemini-3.5-flash", "gemini-flash-latest"];
 const RETRYABLE = new Set([429, 500, 503, 504]);
+const MODEL_TIMEOUT_MS = 10000;
 
 const Input = z.object({
   transcript: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(8000) })).max(400),
@@ -78,7 +81,7 @@ export async function runSummary(data: z.infer<typeof Input>): Promise<CheckInSu
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": key },
         body: payload,
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
       }).catch((e: unknown) => {
         console.error("Gemini summary network error", model, e);
         return null;
