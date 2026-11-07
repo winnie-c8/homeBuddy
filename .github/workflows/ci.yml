@@ -1,0 +1,30 @@
+# Checks that the app still lints, passes its tests and builds, on every push.
+# It only reports a result. Don't make it a required check on main: Lovable's
+# pushes would then be redirected to a side branch and the sync would break.
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install
+        run: bun install --frozen-lockfile
+      # Formatting (prettier) is skipped: Lovable's code isn't prettier-formatted,
+      # and reformatting it mid-hackathon would clash with Lovable's edits.
+      - name: Lint (without formatting)
+        run: 'bunx eslint . --rule "prettier/prettier: off"'
+      - name: Test
+        run: bun run test
+      - name: Build
+        run: bun run build

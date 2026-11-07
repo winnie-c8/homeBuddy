@@ -1,0 +1,68 @@
+name: Task
+description: Something to build or fix, with a checklist that says when it's done.
+title: "[P1] "
+labels: ["task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One issue = one thing a user can see working. Check `docs/BRIEF.md` for which phase it belongs to.
+        Start the title with the phase: [P1], [P2] or [P3].
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options:
+        - "Phase 1: MVP (demo flow)"
+        - "Phase 2: stronger demo"
+        - "Phase 3: only if ahead"
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Who can do what, and why it matters for the demo.
+      placeholder: "The clinician can set each patient's daily check-in questions, so the voice call asks what the doctor prescribed."
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: |
+        Checks anyone can do by clicking through the app or running the tests. Each one is yes or no.
+        Write what you'd see, not how to build it.
+      value: |
+        - [ ]
+        - [ ]
+        - [ ] Works in the published Lovable preview, not only locally
+        - [ ] GitHub check is ✅ on the commit that finished it
+    validations:
+      required: true
+  - type: textarea
+    id: test
+    attributes:
+      label: How to check it
+      description: Steps a teammate follows to tick the boxes above.
+      placeholder: |
+        1. Sign in as the care team demo account
+        2. Open Margaret's page and add a question
+        3. Sign in as Margaret and start a check-in; the call asks the new question
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Built in
+      options:
+        - Lovable
+        - Code (branch + pull request)
+        - Either
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+      placeholder: Who's doing it

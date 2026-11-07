@@ -35,3 +35,17 @@ use the editor.
 - Voice calls use the persistent `/api/live` relay (`src/lib/live-relay.server.ts`, wired in `src/server.ts` and `live-vite-plugin.ts`); the browser sends patient context in `app.start`; why: Live sessions need an open control socket for the whole call.
 - Post-call transcripts are structured by `runSummary` in `src/lib/checkin.functions.ts`; why: keeps AI extraction server-side and testable.
 - Accounts use the connected Supabase auth; profile rows come from the `handle_new_user` trigger, roles from signup metadata or a one-time `choose_role` call (Google/phone users), roles live only in `user_roles`, and role pages sit under `src/routes/_authenticated/` gated by `requireRole` in `src/lib/auth.ts`; why: roles must never be user-editable.
+
+## Team rules
+
+Read `docs/BRIEF.md` first: it says what we're building, for whom, and what the MVP is.
+
+- **MVP first.** Don't start a nice-to-have until the end-to-end flow in the brief works.
+- **Demo data only.** Never add real patient names or health information. Seed obviously fictional patients.
+- **One home for the safety rules.** The green / yellow / red rules and flag logic live in one file, with tests next to it. Change them there, nowhere else.
+- **Not a medical device.** The senior's screen always says to call 911 for emergencies; the AI never diagnoses or gives treatment advice.
+- **Branches.** Lovable works on `main`. Anyone coding outside Lovable works on a branch, keeps it small, and merges into `main` often.
+- **Never rewrite `main`.** No force pushes, rebases or squashes of pushed commits. Undo with a revert commit.
+- **Keep `main` working.** Run `bun run test` and `bun run build` before merging. GitHub runs these plus lint on every push; formatting style isn't checked, so don't reformat files Lovable wrote.
+- **Secrets stay out of the repo.** The Supabase publishable key in `.env` is fine. Anything secret goes in Lovable's Secrets.
+- **Write decisions down.** When the team decides something, add it to the decision log in `docs/BRIEF.md`.
