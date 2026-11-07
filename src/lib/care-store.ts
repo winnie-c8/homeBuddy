@@ -44,11 +44,26 @@ async function update(patientId: string, fn: (b: PatientBlob) => PatientBlob) {
   await refreshCare();
 }
 
+/** How often open pages reload records from the database. */
+export const REFRESH_MS = 20_000;
+
 export function useCare(): CareState | null {
   useEffect(() => {
     if (!loading) loading = refreshCare().catch(() => {
       loading = null;
     });
+  }, []);
+  // Pick up changes made on other devices (e.g. a senior's new check-in) without a page refresh.
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "visible") refreshCare().catch(() => {});
+    };
+    const timer = setInterval(tick, REFRESH_MS);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", tick);
+    };
   }, []);
   return useSyncExternalStore(
     (l) => {
