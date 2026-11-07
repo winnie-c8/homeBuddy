@@ -163,7 +163,7 @@ function CareDashboard() {
             {openAlerts.map((a) => {
               const p = state.patients.find((x) => x.id === a.patientId);
               return (
-                <div key={a.id} className={`p-5 shadow-[var(--shadow-soft)] ${a.level === "urgent" ? "bg-risk-soft" : "bg-watch-soft"}`}>
+                <div key={a.id} className={`p-5 shadow-[var(--shadow-soft)] ${a.level === "urgent" ? "bg-risk" : "bg-watch"}`}>
                   <p className="text-xs font-bold uppercase tracking-wide">{a.level === "urgent" ? "Respond today" : "Watch"}</p>
                   <p className="text-lg font-bold">{p?.name}</p>
                   <p>{a.message}</p>
