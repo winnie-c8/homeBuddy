@@ -1,5 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import patientIcon from "@/assets/patientIcon.svg";
+import familyIcon from "@/assets/familyIcon.svg";
+import careTeamIcon from "@/assets/careTeam.svg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,7 +31,7 @@ function Banner({ role, label, bg, ink, scene, icon }: { role: "senior" | "famil
       <svg viewBox="0 0 700 140" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden="true">
         {scene}
       </svg>
-      <span className={`absolute left-5 top-1/2 grid size-24 -translate-y-1/2 place-items-center bg-scene-ink md:size-28 ${ink}`}>{icon}</span>
+      <span className={`absolute left-5 top-1/2 grid size-24 -translate-y-1/2 place-items-center md:size-28 ${ink}`}>{icon}</span>
       <span style={shadow} className="absolute left-36 top-1/2 -translate-y-1/2 text-5xl font-bold text-scene-ink md:left-44 md:text-6xl">
         {label}
       </span>
@@ -47,7 +50,7 @@ function Index() {
           label="patient"
           bg="bg-sky-1"
           ink="text-sky-3"
-          icon={<svg viewBox="0 0 64 64" className="size-20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round"><circle cx="30" cy="20" r="12" /><path d="M8 58c0-14 10-22 22-22s22 8 22 22" /><path d="M44 44v14M37 51h14" /></svg>}
+          icon={<img src={patientIcon} alt="" className="max-h-full max-w-full object-contain" />}
           scene={
             <>
               <g className="fill-sky-3">
@@ -64,7 +67,7 @@ function Index() {
           label="family"
           bg="bg-meadow-1"
           ink="text-meadow-ink"
-          icon={<svg viewBox="0 0 64 64" className="size-20" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round"><circle cx="16" cy="22" r="8" /><circle cx="48" cy="18" r="8" /><circle cx="32" cy="32" r="8" /><path d="M4 46c0-8 5-12 12-12M60 42c0-8-5-12-12-12M18 60c0-9 6-14 14-14s14 5 14 14" /></svg>}
+          icon={<img src={familyIcon} alt="" className="max-h-full max-w-full object-contain" />}
           scene={
             <>
               <path className="fill-meadow-3" d="M0 90 L60 50 L120 100 L200 40 L270 90 L330 30 L400 100 L470 45 L540 95 L620 20 L700 70 L700 140 L0 140Z" />
@@ -77,7 +80,7 @@ function Index() {
           label="care team"
           bg="bg-dusk-1"
           ink="text-dusk-ink"
-          icon={<svg viewBox="0 0 64 64" className="size-20" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"><path d="M32 56S6 40 6 22a12 12 0 0 1 26-6 12 12 0 0 1 26 6c0 18-26 34-26 34Z" /><path d="M32 22v18M23 31h18" /></svg>}
+          icon={<img src={careTeamIcon} alt="" className="max-h-full max-w-full object-contain" />}
           scene={
             <>
               <g className="fill-dusk-3">
