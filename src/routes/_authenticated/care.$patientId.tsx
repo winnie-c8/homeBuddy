@@ -3,7 +3,7 @@ import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
 import type React from "react";
-import swirl from "@/assets/patient-cream-swirl.svg.asset.json";
+import patientBackground from "@/assets/patient-block-background.svg.asset.json";
 import { ArrowLeft, ChevronDown, Phone, Plus, Send, Trash2, AlertTriangle } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ function PatientPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-pt-bg">
-    <img src={swirl.url} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top" />
+    <img src={patientBackground.url} alt="" aria-hidden className="patient-page-background pointer-events-none absolute inset-x-0 top-0 w-full" />
     <main className="relative mx-auto max-w-5xl px-5 pb-24 pt-8">
       <Link to="/care" className="inline-flex items-center gap-1 text-sm text-pt-inner hover:text-scene-ink">
         <ArrowLeft className="size-4" /> All patients
