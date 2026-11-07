@@ -6,5 +6,5 @@
   {"capability":"AI gateway (summaries, live voice)","source":"Lovable AI Gateway","outcome":"preserve","status":"done","next_action":"test a voice check-in in preview"},
   {"capability":"public endpoint /api/live websocket","source":"src/server.ts","outcome":"preserve","status":"done","next_action":"none"},
   {"capability":"secrets","source":"LOVABLE_API_KEY","outcome":"preserve","status":"verified","next_action":"none"},
-  {"capability":"verification","source":"tests + routes","outcome":"verify","status":"in_progress","next_action":"none"}
+  {"capability":"verification","source":"tests + routes","outcome":"verify","status":"verified","next_action":"live voice call and AI summary not exercised"}
 ]
