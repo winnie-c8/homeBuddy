@@ -80,8 +80,8 @@ function CareDashboard() {
       <main className="relative mx-auto max-w-6xl px-5 pb-24 pt-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xl">Welcome, {account.displayName}</p>
-            <h1 className="text-6xl font-bold md:text-7xl">Your Patients</h1>
+            <p className="text-xl text-clinic-heading">Welcome, {account.displayName}</p>
+            <h1 className="text-6xl font-bold text-clinic-heading md:text-7xl">Your Patients</h1>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -94,7 +94,7 @@ function CareDashboard() {
                 <JoinPatientCard
                   kind="care_team"
                   onDone={() => setAddOpen(false)}
-                  className="space-y-4 bg-card p-8 [&_button[type=submit]]:h-12 [&_button[type=submit]]:rounded-2xl [&_button[type=submit]]:text-lg [&_h3]:text-4xl [&_h3]:font-bold [&_input]:h-12 [&_input]:rounded-none [&_input]:bg-clinic-bg [&_input]:text-lg [&_label]:text-lg [&_p]:italic"
+                  className="space-y-4 bg-card p-8 [&_button[type=submit]]:h-12 [&_button[type=submit]]:rounded-2xl [&_button[type=submit]]:bg-clinic-action [&_button[type=submit]]:text-scene-ink [&_button[type=submit]]:hover:bg-clinic-action/90 [&_button[type=submit]]:text-lg [&_h3]:text-4xl [&_h3]:font-bold [&_input]:h-12 [&_input]:rounded-none [&_input]:bg-scene-ink [&_input]:text-pt-ink [&_input]:text-lg [&_label]:text-lg [&_p]:italic"
                 />
               </DialogContent>
             </Dialog>
@@ -155,7 +155,7 @@ function CareDashboard() {
         </section>
 
         <section className="mt-12">
-          <h2 className="mb-4 flex items-center gap-2 text-3xl font-bold"><BellRing className="size-6" /> Alerts</h2>
+          <h2 className="mb-4 flex items-center gap-2 text-3xl font-bold text-clinic-heading"><BellRing className="size-6" /> Alerts</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {openAlerts.length === 0 && <p className="bg-card p-5 shadow-[var(--shadow-soft)]">No open alerts.</p>}
             {openAlerts.map((a) => {
@@ -189,7 +189,7 @@ function CareDashboard() {
 
         {handled.length > 0 && (
           <section className="mt-12">
-            <h2 className="mb-4 flex items-center gap-2 text-3xl font-bold"><CheckCircle2 className="size-6" /> Handled</h2>
+            <h2 className="mb-4 flex items-center gap-2 text-3xl font-bold text-clinic-heading"><CheckCircle2 className="size-6" /> Handled</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {handled.map((a) => {
                 const p = state.patients.find((x) => x.id === a.patientId);

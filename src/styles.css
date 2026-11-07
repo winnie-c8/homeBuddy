@@ -72,6 +72,13 @@
   --color-call-green: var(--call-green);
   --color-scene-ink: var(--scene-ink);
   --color-clinic-bg: var(--clinic-bg);
+  --color-clinic-heading: var(--clinic-heading);
+  --color-clinic-action: var(--clinic-action);
+  --color-pt-bg: var(--pt-bg);
+  --color-pt-panel: var(--pt-panel);
+  --color-pt-inner: var(--pt-inner);
+  --color-pt-btn: var(--pt-btn);
+  --color-pt-ink: var(--pt-ink);
   --color-risk: var(--risk);
   --color-risk-soft: var(--risk-soft);
   --color-risk-ink: var(--risk-ink);
@@ -84,6 +91,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-family-bg: var(--family-bg);
+  --color-family-ink: var(--family-ink);
+  --color-family-stat: var(--family-stat);
+  --color-family-plan: var(--family-plan);
+  --color-family-on-green: var(--family-on-green);
   --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --color-status-green: var(--status-green);
@@ -105,6 +117,11 @@
 
 :root {
   --radius: 1rem;
+  --family-bg: oklch(0.977 0.03 137);
+  --family-ink: oklch(0.373 0.089 137);
+  --family-stat: oklch(0.491 0.108 138);
+  --family-plan: oklch(0.691 0.125 138);
+  --family-on-green: oklch(1 0 0);
   --background: oklch(0.975 0.012 80);
   --foreground: oklch(0.24 0.03 160);
   --card: oklch(0.995 0.006 85);
@@ -141,14 +158,21 @@
   --dusk-ink: oklch(0.5 0.02 20);
   --call-green: oklch(0.8 0.17 145);
   --scene-ink: oklch(0.99 0 0);
-  --clinic-bg: #eef2f6;
-  --risk: #eb6b6b;
-  --risk-soft: #f4d2d2;
-  --risk-ink: #d00000;
-  --watch: #f5bf4c;
-  --watch-soft: #fff283;
+  --clinic-bg: oklch(0.405618 0.068861 57.4462);
+  --clinic-heading: oklch(0.817280 0.043965 70.5719);
+  --clinic-action: oklch(0.45 0.09 240);
+  --pt-bg: oklch(0.401518 0.069824 54.2838);
+  --pt-panel: #d6bfa5;
+  --pt-inner: #f5ede3;
+  --pt-btn: #987153;
+  --pt-ink: #653f21;
+  --risk: oklch(0.679912 0.156878 22.1278);
+  --risk-soft: oklch(0.897535 0.036974 17.8615);
+  --risk-ink: oklch(0.554898 0.223673 28.8400);
+  --watch: oklch(0.835190 0.141679 83.4309);
+  --watch-soft: oklch(0.951166 0.133208 103.0992);
   --update-soft: #cae1f2;
-  --calm-dot: #bcaaaa;
+  --calm-dot: oklch(0.752498 0.019722 17.5988);
   --status-yellow: oklch(0.75 0.15 80);
   --status-yellow-soft: oklch(0.95 0.06 90);
   --status-red: oklch(0.58 0.2 27);
@@ -173,6 +197,13 @@
 }
 
 .dark {
+  --clinic-bg: oklch(0.29 0.04 57.4462);
+  --clinic-heading: oklch(0.86 0.04 70.5719);
+  --family-bg: oklch(0.24 0.035 137);
+  --family-ink: oklch(0.94 0.03 137);
+  --family-stat: oklch(0.39 0.075 138);
+  --family-plan: oklch(0.43 0.09 138);
+  --family-on-green: oklch(1 0 0);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -217,6 +248,13 @@
     color: var(--color-foreground);
   }
 }
+
+.family-page {
+  background-color: var(--family-bg);
+  color: var(--family-ink);
+  letter-spacing: 0;
+}
+.family-page h1, .family-page h2 { letter-spacing: 0; }
 
 @layer base {
   body {
