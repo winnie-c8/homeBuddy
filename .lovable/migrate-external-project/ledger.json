@@ -1,0 +1,10 @@
+[
+  {"capability":"code","source":"TanStack Start app (Hearthline)","outcome":"migrate","status":"done","next_action":"none"},
+  {"capability":"schema","source":"none (browser localStorage demo store)","outcome":"none","status":"verified","next_action":"none"},
+  {"capability":"records","source":"seeded sample patients in src/lib/care.ts","outcome":"migrate","status":"done","next_action":"none"},
+  {"capability":"auth identities","source":"none in use (no sign-in in source)","outcome":"none","status":"verified","next_action":"none"},
+  {"capability":"AI gateway (summaries, live voice)","source":"Lovable AI Gateway","outcome":"preserve","status":"done","next_action":"test a voice check-in in preview"},
+  {"capability":"public endpoint /api/live websocket","source":"src/server.ts","outcome":"preserve","status":"done","next_action":"none"},
+  {"capability":"secrets","source":"LOVABLE_API_KEY","outcome":"preserve","status":"verified","next_action":"none"},
+  {"capability":"verification","source":"tests + routes","outcome":"verify","status":"verified","next_action":"live voice call and AI summary not exercised"}
+]
