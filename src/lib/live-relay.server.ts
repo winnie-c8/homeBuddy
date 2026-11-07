@@ -177,6 +177,17 @@ export function bindLiveConnection(browser: LiveSocket, config: LiveConfig, ctx:
             generationConfig: {
               responseModalities: ["AUDIO"],
               speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: config.voice } } },
+              // Native-audio models "think" before speaking by default, which adds seconds of delay.
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+            // Reply as soon as the person stops talking instead of waiting for a long silence.
+            realtimeInputConfig: {
+              automaticActivityDetection: {
+                startOfSpeechSensitivity: "START_SENSITIVITY_HIGH",
+                endOfSpeechSensitivity: "END_SENSITIVITY_HIGH",
+                prefixPaddingMs: 100,
+                silenceDurationMs: 500,
+              },
             },
             systemInstruction: { parts: [{ text: buildInstructions(context) }] },
             inputAudioTranscription: {},
