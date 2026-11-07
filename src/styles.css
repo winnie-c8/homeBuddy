@@ -89,6 +89,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-family-bg: var(--family-bg);
+  --color-family-ink: var(--family-ink);
+  --color-family-stat: var(--family-stat);
+  --color-family-plan: var(--family-plan);
+  --color-family-on-green: var(--family-on-green);
   --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --color-status-green: var(--status-green);
@@ -110,6 +115,11 @@
 
 :root {
   --radius: 1rem;
+  --family-bg: oklch(0.977 0.03 137);
+  --family-ink: oklch(0.373 0.089 137);
+  --family-stat: oklch(0.491 0.108 138);
+  --family-plan: oklch(0.691 0.125 138);
+  --family-on-green: oklch(1 0 0);
   --background: oklch(0.975 0.012 80);
   --foreground: oklch(0.24 0.03 160);
   --card: oklch(0.995 0.006 85);
@@ -183,6 +193,11 @@
 }
 
 .dark {
+  --family-bg: oklch(0.24 0.035 137);
+  --family-ink: oklch(0.94 0.03 137);
+  --family-stat: oklch(0.39 0.075 138);
+  --family-plan: oklch(0.43 0.09 138);
+  --family-on-green: oklch(1 0 0);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
@@ -227,6 +242,13 @@
     color: var(--color-foreground);
   }
 }
+
+.family-page {
+  background-color: var(--family-bg);
+  color: var(--family-ink);
+  letter-spacing: 0;
+}
+.family-page h1, .family-page h2 { letter-spacing: 0; }
 
 @layer base {
   body {

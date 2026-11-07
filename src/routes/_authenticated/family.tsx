@@ -1,13 +1,14 @@
 import { requireRole } from "@/lib/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow, format } from "date-fns";
-import { BellRing, Lock, Pill } from "lucide-react";
+import { BellRing, Lock } from "lucide-react";
 import { Loading, StatusBadge } from "@/components/status-badge";
 import { useCare } from "@/lib/care-store";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, alertStage, followUpForFamily, latestCheckIn, patientStatus } from "@/lib/care";
+import familyBackground from "@/assets/family-background.svg.asset.json";
 
 export const Route = createFileRoute("/_authenticated/family")({
   beforeLoad: ({ context }) => requireRole(context.account, "family"),
@@ -37,7 +38,8 @@ function FamilyPage() {
 
   if (!p) {
     return (
-      <main className="mx-auto max-w-xl px-5 py-16">
+      <main className="family-page min-h-[calc(100dvh-5rem)] px-5 py-16">
+        <div className="mx-auto max-w-xl">
         {linked ? (
           <div className="text-center">
             <Lock className="mx-auto size-12 text-muted-foreground" />
@@ -53,6 +55,7 @@ function FamilyPage() {
             <JoinPatientCard kind="family" />
           </>
         )}
+        </div>
       </main>
     );
   }
@@ -62,12 +65,26 @@ function FamilyPage() {
   const alerts = state.alerts.filter((a) => a.patientId === p.id && a.notified.includes(ME.name)).sort((a, b) => b.at.localeCompare(a.at));
 
   return (
-    <main className="mx-auto max-w-4xl px-5 pb-24 pt-12">
-      <p className="text-muted-foreground">Hi {account.displayName} — here's how {p.preferredName} is doing.</p>
-      <div className="mt-2 flex flex-wrap items-center gap-4">
-        <h1 className="text-5xl font-semibold">{p.name}</h1>
+    <main className="family-page relative isolate min-h-[calc(100dvh-5rem)] overflow-hidden px-5 pb-24 pt-10 sm:px-10">
+      <img src={familyBackground.url} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 size-full object-cover object-top" />
+      <div className="mx-auto max-w-6xl">
+      <div className="flex flex-wrap items-center gap-4">
+        <h1 className="break-words text-5xl font-bold sm:text-6xl">{p.name}</h1>
         <StatusBadge status={patientStatus(p)} />
       </div>
+
+      <section className="mt-8 grid gap-5 sm:grid-cols-3 sm:gap-8" aria-label="Seven-day averages">
+        <Stat label="Medications" value={`${adherence(week) ?? "—"}%`} />
+        <Stat label="Average mood" value={avg(week.map((c) => c.mood))} suffix="/5" />
+        <Stat label="Average sleep" value={avg(week.map((c) => c.sleepHours))} suffix=" h" />
+      </section>
+
+      <section className="mt-10 bg-family-plan px-6 py-7 text-family-on-green sm:px-10">
+        <h2 className="text-3xl font-bold">Care Plan</h2>
+        <ul className="mt-2 list-disc space-y-1 pl-7 text-xl sm:text-2xl">
+          {p.planItems.map((i) => <li key={i}>{i}</li>)}
+        </ul>
+      </section>
 
       {alerts.length > 0 && (
         <section className="mt-8 space-y-3">
@@ -85,24 +102,13 @@ function FamilyPage() {
       )}
 
       {last && (
-        <section className="mt-8 rounded-3xl border border-border bg-card p-7 shadow-[var(--shadow-soft)]">
+        <section className="mt-8 border-t border-family-ink/20 py-6">
           <p className="text-sm text-muted-foreground">Latest check-in · {format(new Date(last.date), "EEEE, MMM d 'at' h:mm a")}</p>
           <p className="mt-2 text-xl leading-relaxed">{last.summary}</p>
         </section>
       )}
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-3">
-        <Stat label="Medications taken (7 days)" value={`${adherence(week) ?? "—"}%`} />
-        <Stat label="Average mood" value={avg(week.map((c) => c.mood))} suffix="/5" />
-        <Stat label="Average sleep" value={avg(week.map((c) => c.sleepHours))} suffix=" h" />
-      </section>
-
-      <section className="mt-8 rounded-3xl border border-border bg-card p-7">
-        <h2 className="flex items-center gap-2 text-2xl font-semibold"><Pill className="size-6 text-primary" /> Care plan</h2>
-        <ul className="mt-4 list-disc space-y-1 pl-6 text-lg">
-          {p.planItems.map((i) => <li key={i}>{i}</li>)}
-        </ul>
-      </section>
+      </div>
     </main>
   );
 }
@@ -114,9 +120,9 @@ function avg(xs: (number | null)[]) {
 
 function Stat({ label, value, suffix = "" }: { label: string; value: string; suffix?: string }) {
   return (
-    <div className="rounded-3xl bg-secondary p-6">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 font-display text-4xl font-semibold">{value}{value !== "—" && suffix}</p>
+    <div className="flex min-h-48 flex-col items-center justify-center gap-4 bg-family-stat p-5 text-center text-family-on-green sm:min-h-56">
+      <p className="text-2xl font-bold">{label}</p>
+      <p className="font-display text-5xl font-bold">{value}{value !== "—" && suffix}</p>
     </div>
   );
 }
