@@ -57,16 +57,19 @@ function PatientPage() {
 
       <Flags checkIns={checkIns} />
 
+      <AskRosie p={p} />
+
       <Panel title="Graphs">
         <div className="grid gap-5 md:grid-cols-2">
+          {clinicianQuestionsOf(p).map((q) => (
+            <QuestionGraph key={q.id} p={p} q={q} />
+          ))}
           <Trend title="Medication adherence (%)" data={checkIns} pick={(c) => (c.answered && c.meds.length ? Math.round((c.meds.filter((m) => m.taken === "yes").length / c.meds.length) * 100) : null)} domain={[0, 100]} color="var(--chart-1)" />
           <Trend title="Mood (1–5)" data={checkIns} pick={(c) => c.mood} domain={[1, 5]} color="var(--chart-2)" />
           <Trend title="Sleep (hours)" data={checkIns} pick={(c) => c.sleepHours} domain={[0, 10]} color="var(--chart-3)" />
           <Trend title="Appetite (meals/day)" data={checkIns} pick={(c) => (c.answered ? c.meals : null)} domain={[0, 3]} color="var(--chart-4)" />
         </div>
       </Panel>
-
-      <AskRosie p={p} />
 
       <Panel title={`Questions from ${p.preferredName}`}>
         <div className="bg-card p-5">
@@ -270,7 +273,7 @@ function AskRosie({ p }: { p: Patient }) {
   const list = clinicianQuestionsOf(p).reverse();
   return (
     <Panel title={`Ask ${p.preferredName} a question`}>
-      <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI.</p>
+      <p className="text-sm">Rosie asks these and brings back {p.preferredName}'s answer and words. Your "flag if" rule decides the colour, not the AI. Each question gets its own graph and table in Graphs below.</p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
@@ -347,7 +350,6 @@ function AskRosie({ p }: { p: Patient }) {
           <li key={q.id} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0">
             <div>
               <p className="text-lg">“{q.text}”</p>
-              <QuestionGraph p={p} q={q} />
               <p className="text-xs text-muted-foreground">
                 {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {frequencyLabel(q)} · {q.kind === "number"
                   ? `Number${q.unit ? ` (${q.unit})` : ""} · ${[q.below !== undefined ? `flag below ${q.below}` : "", q.above !== undefined ? `flag above ${q.above}` : ""].filter(Boolean).join(", ") || "no flag"}`
@@ -376,15 +378,42 @@ function AskRosie({ p }: { p: Patient }) {
  * Number: the amount per day with the clinician's limits drawn as dashed lines.
  */
 function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
+  const [view, setView] = useState<"graph" | "table">("graph");
   const all = questionHistory(p, q.text);
+  const rule =
+    q.kind === "number"
+      ? [q.unit, q.below !== undefined ? `flag below ${q.below}` : "", q.above !== undefined ? `flag above ${q.above}` : ""].filter(Boolean).join(" · ")
+      : q.flagIf ? `flag if ${q.flagIf}` : "no flag";
+  const header = (
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div>
+        <p className="font-bold">“{q.text}”</p>
+        <p className="text-xs text-muted-foreground">{q.kind === "number" ? "Number" : "Yes / no"} · {rule} · {frequencyLabel(q)}</p>
+      </div>
+      <div className="flex shrink-0 text-xs font-bold" role="group" aria-label="View">
+        {(["graph", "table"] as const).map((v) => (
+          <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`px-2.5 py-1 ${view === v ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+            {v === "graph" ? "Graph" : "Table"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
   const h = all.slice(-14);
+  if (view === "table")
+    return (
+      <div className="bg-card p-5">
+        {header}
+        <AnswerTable q={q} rows={all} />
+      </div>
+    );
   if (!h.length)
     return (
-      <div className="my-3 bg-background p-3">
+      <div className="bg-card p-5">
+        {header}
         <div className="flex h-32 items-center justify-center border-2 border-dashed border-border text-sm text-muted-foreground">
           {q.kind === "number" ? `Graph: ${q.unit || "amount"} per day${q.below !== undefined ? `, flag line at ${q.below}` : ""}${q.above !== undefined ? `, flag line at ${q.above}` : ""}` : "Graph: one bar per day (green = fine, red = flagged)"} — fills in after the first call
         </div>
-        <AnswerTable q={q} rows={[]} />
       </div>
     );
   const last3 = h.slice(-3);
@@ -407,8 +436,9 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
       ) : null;
     };
   return (
-    <div className="my-3 bg-background p-3">
-      <div className="h-32">
+    <div className="bg-card p-5">
+      {header}
+      <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
           {q.kind === "number" ? (
             <LineChart data={rows} margin={{ left: -20, right: 8, top: 6 }}>
@@ -437,7 +467,6 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
       <p className="mt-1 text-xs text-muted-foreground">
         Fine {fine} of the last {last3.length} time{last3.length === 1 ? "" : "s"} · green = fine, red = flagged, grey = unclear
       </p>
-      <AnswerTable q={q} rows={all} />
     </div>
   );
 }
@@ -445,9 +474,8 @@ function QuestionGraph({ p, q }: { p: Patient; q: ClinicianQuestion }) {
 /** Every saved answer to one question, newest first: the raw data behind the graph. */
 function AnswerTable({ q, rows }: { q: ClinicianQuestion; rows: ReturnType<typeof questionHistory> }) {
   return (
-    <details className="mt-2 text-sm" open={rows.length === 0 ? undefined : false}>
-      <summary className="cursor-pointer font-semibold">Answers table ({rows.length})</summary>
-      <table className="mt-2 w-full text-left">
+    <div className="max-h-56 overflow-y-auto text-sm">
+      <table className="w-full text-left">
         <thead className="text-xs text-muted-foreground">
           <tr>
             <th className="py-1 pr-3">Day</th>
@@ -472,6 +500,6 @@ function AnswerTable({ q, rows }: { q: ClinicianQuestion; rows: ReturnType<typeo
           ))}
         </tbody>
       </table>
-    </details>
+    </div>
   );
 }
