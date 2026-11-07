@@ -2,7 +2,8 @@ import { requireRole } from "@/lib/auth";
 import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
-import { ArrowLeft, Phone, Plus, Send, Trash2, AlertTriangle } from "lucide-react";
+import type React from "react";
+import { ArrowLeft, ChevronDown, Phone, Plus, Send, Trash2, AlertTriangle } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,52 +39,58 @@ function PatientPage() {
   const questions = state.questions.filter((q) => q.patientId === p.id);
 
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-24 pt-8">
+    <div className="min-h-screen bg-clinic-bg">
+    <main className="mx-auto max-w-5xl px-5 pb-24 pt-8">
       <Link to="/care" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> All patients
       </Link>
       <div className="mt-3 flex flex-wrap items-center gap-4">
-        <h1 className="text-4xl font-semibold">{p.name}</h1>
+        <h1 className="text-6xl font-bold md:text-7xl">{p.name}</h1>
         <StatusBadge status={patientStatus(p)} />
       </div>
-      <p className="mt-1 text-muted-foreground">
-        {p.age} · {p.city} · {p.conditions.join(", ")} · <Phone className="inline size-3.5" /> Daily call {p.callTime}
-      </p>
+      <dl className="mt-4 flex flex-wrap gap-3 text-lg">
+        <Info label="Age" value={String(p.age)} />
+        <Info label="City" value={p.city} />
+        {p.conditions.length > 0 && <Info label="Conditions" value={p.conditions.join(", ")} />}
+        <Info label="Daily call" value={p.callTime} icon />
+      </dl>
 
       <Flags checkIns={checkIns} />
 
-      <section className="mt-8 grid gap-5 md:grid-cols-2">
-        <Trend title="Medication adherence (%)" data={checkIns} pick={(c) => (c.answered && c.meds.length ? Math.round((c.meds.filter((m) => m.taken === "yes").length / c.meds.length) * 100) : null)} domain={[0, 100]} color="var(--chart-1)" />
-        <Trend title="Mood (1–5)" data={checkIns} pick={(c) => c.mood} domain={[1, 5]} color="var(--chart-2)" />
-        <Trend title="Sleep (hours)" data={checkIns} pick={(c) => c.sleepHours} domain={[0, 10]} color="var(--chart-3)" />
-        <Trend title="Appetite (meals/day)" data={checkIns} pick={(c) => (c.answered ? c.meals : null)} domain={[0, 3]} color="var(--chart-4)" />
-      </section>
+      <Panel title="Graphs">
+        <div className="grid gap-5 md:grid-cols-2">
+          <Trend title="Medication adherence (%)" data={checkIns} pick={(c) => (c.answered && c.meds.length ? Math.round((c.meds.filter((m) => m.taken === "yes").length / c.meds.length) * 100) : null)} domain={[0, 100]} color="var(--chart-1)" />
+          <Trend title="Mood (1–5)" data={checkIns} pick={(c) => c.mood} domain={[1, 5]} color="var(--chart-2)" />
+          <Trend title="Sleep (hours)" data={checkIns} pick={(c) => c.sleepHours} domain={[0, 10]} color="var(--chart-3)" />
+          <Trend title="Appetite (meals/day)" data={checkIns} pick={(c) => (c.answered ? c.meals : null)} domain={[0, 3]} color="var(--chart-4)" />
+        </div>
+      </Panel>
 
       <AskRosie p={p} />
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        <section className="rounded-3xl border border-border bg-card p-6">
-          <h2 className="text-2xl font-semibold">Questions from {p.preferredName}</h2>
+      <Panel title={`Questions from ${p.preferredName}`}>
+        <div className="bg-card p-5">
           <p className="text-sm text-muted-foreground">Answers are explained on the next call.</p>
-          <div className="mt-4 space-y-4">
+          <div className="mt-3 space-y-4">
             {questions.length === 0 && <p className="text-muted-foreground">No questions yet.</p>}
             {questions.map((q) => <QuestionItem key={q.id} q={q} />)}
           </div>
-        </section>
-        <PlanEditor p={p} />
-      </div>
+        </div>
+      </Panel>
 
-      <section className="mt-8 rounded-3xl border border-border bg-card p-6">
-        <h2 className="text-2xl font-semibold">Check-in history</h2>
-        <ul className="mt-4 divide-y divide-border">
+      <PlanEditor p={p} />
+
+      <Panel title="Check-in history">
+        <ul className="bg-card p-5">
+          {checkIns.length === 0 && <li className="text-muted-foreground">No check-ins yet.</li>}
           {[...checkIns].reverse().map((c) => (
-            <li key={c.id} className="flex gap-4 py-3">
-              <StatusDot status={checkInStatus(c)} className="mt-1.5 shrink-0" />
+            <li key={c.id} className="relative flex gap-4 border-l-2 border-watch/50 py-3 pl-5 last:border-transparent">
+              <StatusDot status={checkInStatus(c)} className="absolute -left-[9px] top-4 shrink-0" />
               <div>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(c.date), "EEE MMM d, h:mm a")} {c.source === "voice" && "· voice call"}
+                <p className="text-xl font-bold">
+                  {format(new Date(c.date), "EEE MMM d, yyyy '@' h:mma")} {c.source === "voice" && <span className="text-sm font-normal text-muted-foreground">· voice call</span>}
                 </p>
-                <p>{c.summary}</p>
+                <p className="mt-1">{c.summary}</p>
                 {findings(c, p.preferredName).length > 0 && (
                   <ul className="mt-1 flex flex-wrap gap-1.5">
                     {findings(c, p.preferredName).map((f) => (
@@ -97,8 +104,37 @@ function PatientPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </Panel>
     </main>
+    </div>
+  );
+}
+
+function Info({ label, value, icon }: { label: string; value: string; icon?: boolean }) {
+  return (
+    <div className="bg-card px-4 py-2 shadow-[var(--shadow-soft)]">
+      <dt className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="flex items-center gap-1.5 font-bold">{icon && <Phone className="size-4" />}{value}</dd>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <section className="mt-10 shadow-[var(--shadow-soft)]">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between bg-card px-6 py-4 text-left"
+      >
+        <h2 className="text-3xl font-bold">{title}</h2>
+        <ChevronDown className={`size-9 stroke-[1.5] transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden />
+        <span className="sr-only">{open ? "Hide" : "Show"} {title}</span>
+      </button>
+      {open && <div className="bg-update-soft p-6">{children}</div>}
+    </section>
   );
 }
 
@@ -130,7 +166,7 @@ function Flags({ checkIns }: { checkIns: CheckIn[] }) {
 function Trend({ title, data, pick, domain, color }: { title: string; data: CheckIn[]; pick: (c: CheckIn) => number | null; domain: [number, number]; color: string }) {
   const rows = data.map((c) => ({ day: format(new Date(c.date), "MMM d"), v: pick(c) }));
   return (
-    <div className="rounded-3xl border border-border bg-card p-5">
+    <div className="bg-card p-5">
       <p className="mb-3 font-bold">{title}</p>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
@@ -151,8 +187,8 @@ function QuestionItem({ q }: { q: { id: string; patientId: string; text: string;
   const [text, setText] = useState("");
   const { account } = useRouteContext({ from: "/_authenticated" });
   return (
-    <div className="rounded-2xl bg-muted p-4">
-      <p className="font-bold">"{q.text}"</p>
+    <div className="border-b border-border pb-4 last:border-0">
+      <p className="text-lg">“{q.text}”</p>
       <p className="text-xs text-muted-foreground">{format(new Date(q.askedAt), "MMM d, h:mm a")}</p>
       {q.answer ? (
         <p className="mt-2 text-sm">
@@ -167,8 +203,8 @@ function QuestionItem({ q }: { q: { id: string; patientId: string; text: string;
             if (text.trim()) void care.answerQuestion(q.patientId, q.id, text.trim(), account.displayName);
           }}
         >
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write an answer in plain language" className="bg-card" />
-          <Button type="submit" size="icon" aria-label="Send answer"><Send /></Button>
+          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type an answer…" className="rounded-none bg-clinic-bg" />
+          <Button type="submit" className="rounded-none" aria-label="Send answer"><Send /> Send</Button>
         </form>
       )}
     </div>
@@ -182,8 +218,8 @@ function PlanEditor({ p }: { p: Patient }) {
   const dirty = JSON.stringify(items) !== JSON.stringify(p.planItems);
   const pending = p.planChanges.filter((c) => !c.deliveredAt);
   return (
-    <section className="rounded-3xl border border-border bg-card p-6">
-      <h2 className="text-2xl font-semibold">Care plan</h2>
+    <Panel title="Care plan">
+      <div className="bg-card p-5">
       <p className="text-sm text-muted-foreground">Rosie explains changes on the next call.</p>
       <ul className="mt-4 space-y-2">
         {items.map((i, idx) => (
@@ -214,7 +250,8 @@ function PlanEditor({ p }: { p: Patient }) {
           <ul className="mt-1 list-disc pl-5">{pending.map((c) => <li key={c.id}>{c.text}</li>)}</ul>
         </div>
       )}
-    </section>
+      </div>
+    </Panel>
   );
 }
 
@@ -226,9 +263,8 @@ function AskRosie({ p }: { p: Patient }) {
   const { account } = useRouteContext({ from: "/_authenticated" });
   const list = clinicianQuestionsOf(p).reverse();
   return (
-    <section className="mt-8 rounded-3xl border border-border bg-card p-6">
-      <h2 className="text-2xl font-semibold">{p.preferredName}'s check-in questions</h2>
-      <p className="text-sm text-muted-foreground">Rosie asks these as yes/no questions and brings back {p.preferredName}'s words. Your "flag if" rule decides the colour, not the AI.</p>
+    <Panel title={`Ask ${p.preferredName} a question`}>
+      <p className="text-sm">Rosie asks these as yes/no questions and brings back {p.preferredName}'s words. Your "flag if" rule decides the colour, not the AI.</p>
       <form
         className="mt-4 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
@@ -241,26 +277,33 @@ function AskRosie({ p }: { p: Patient }) {
             .finally(() => setBusy(false));
         }}
       >
-        <Input className="min-w-64 flex-1" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Did you do your dialysis today?" />
-        <label className="flex items-center gap-2 text-sm">
-          Flag if
-          <select className="rounded-md border border-input bg-background px-2 py-2" value={flagIf} onChange={(e) => setFlagIf(e.target.value as "" | FlagIf)}>
-            <option value="">never (just record)</option>
-            <option value="no">answer is No</option>
-            <option value="yes">answer is Yes</option>
-          </select>
-        </label>
+        <Input className="min-w-64 flex-1 rounded-none bg-card" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type question here… e.g. Did you do your dialysis today?" />
+        <div className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm" role="group" aria-label="Flag if answer is">
+          Flag if answer is:
+          {(["yes", "no"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={flagIf === v}
+              onClick={() => setFlagIf(flagIf === v ? "" : v)}
+              className={`px-3 py-0.5 font-bold ${flagIf === v ? (v === "yes" ? "bg-status-green text-primary-foreground" : "bg-status-red text-primary-foreground") : "bg-muted"}`}
+            >
+              {v}
+            </button>
+          ))}
+          {!flagIf && <span className="text-muted-foreground">(never, just record)</span>}
+        </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-4" checked={daily} onChange={(e) => setDaily(e.target.checked)} /> Ask every day
         </label>
-        <Button type="submit" disabled={busy || !text.trim()}><Plus /> Add question</Button>
+        <Button type="submit" className="rounded-none" disabled={busy || !text.trim()}><Plus /> Add question</Button>
       </form>
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-4 space-y-3 bg-card p-5">
         {list.length === 0 && <li className="text-muted-foreground">No questions queued.</li>}
         {list.map((q) => (
-          <li key={q.id} className="flex items-start justify-between gap-3 rounded-2xl bg-muted p-4">
+          <li key={q.id} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0">
             <div>
-              <p className="font-bold">"{q.text}"</p>
+              <p className="text-lg">“{q.text}”</p>
               <p className="text-xs text-muted-foreground">
                 {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
               </p>
@@ -276,6 +319,6 @@ function AskRosie({ p }: { p: Patient }) {
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }
