@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { clinicianQuestions, clinicianQuestionsOf } from "@/lib/clinician-questions";
 import { care, useCare } from "@/lib/care-store";
-import { checkInStatus, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
+import { checkInStatus, findings, patientStatus, type CheckIn, type FlagIf, type Patient } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/care/$patientId")({
   beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
@@ -84,8 +84,14 @@ function PatientPage() {
                   {format(new Date(c.date), "EEE MMM d, h:mm a")} {c.source === "voice" && "· voice call"}
                 </p>
                 <p>{c.summary}</p>
-                {c.answered && c.meds.some((m) => m.taken !== "yes") && (
-                  <p className="text-sm text-accent">Not confirmed: {c.meds.filter((m) => m.taken !== "yes").map((m) => m.name).join(", ")}</p>
+                {findings(c, p.preferredName).length > 0 && (
+                  <ul className="mt-1 flex flex-wrap gap-1.5">
+                    {findings(c, p.preferredName).map((f) => (
+                      <li key={f.key} className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${f.status === "red" ? "bg-status-red-soft" : "bg-status-yellow-soft"}`}>
+                        {f.clinician}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </li>

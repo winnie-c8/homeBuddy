@@ -75,7 +75,7 @@ function FamilyPage() {
             <div key={a.id} className={`flex gap-3 rounded-2xl p-4 ${a.level === "urgent" ? "bg-status-red-soft" : "bg-status-yellow-soft"}`}>
               <BellRing className="mt-0.5 size-5 shrink-0" />
               <div>
-                <p className="font-bold">{a.message}</p>
+                <p className="font-bold">{a.family ?? a.message}</p>
                 <p className="text-sm text-muted-foreground">{formatDistanceToNow(new Date(a.at), { addSuffix: true })}</p>
               </div>
             </div>

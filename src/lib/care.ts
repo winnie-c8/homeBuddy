@@ -72,10 +72,18 @@ export type Alert = {
   patientId: string;
   at: string;
   level: "urgent" | "warning";
+  /** For the clinician: the reason with numbers and the senior's words. */
   message: string;
+  /** For family: the same reason in plain words. Older alerts may not have it. */
+  family?: string | undefined;
+  /** Which rule fired (e.g. "mood_low"); used to spot the same reason on several days. */
+  key?: string | undefined;
   notified: string[];
   acknowledged?: boolean;
 };
+
+/** One reason a check-in is yellow or red. Every flag comes from exactly one of these. */
+export type Finding = { key: string; status: "red" | "yellow"; clinician: string; family: string };
 
 export type Patient = {
   id: string;
@@ -111,30 +119,63 @@ export function detectUrgent(text: string): string[] {
   return URGENT_WORDS.filter((w) => new RegExp(`(^|[^a-z'])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z'])`).test(t));
 }
 
-/** Status of one check-in: red = act now, yellow = watch, green = on track. */
+/**
+ * The daily rules. Each one that fires gives a reason for the clinician (with numbers)
+ * and the same reason in plain words for family. Red = respond today, yellow = watch.
+ */
+export function findings(c: CheckIn, name = "Patient"): Finding[] {
+  const out: Finding[] = [];
+  const add = (key: string, status: Finding["status"], clinician: string, family: string) => out.push({ key, status, clinician, family });
+  if (!c.answered) {
+    add("no_answer", "red", "Did not answer today's check-in call", `${name} didn't answer today's check-in`);
+    return out;
+  }
+  if (c.fall) add("fall", "red", "Reported a fall", `${name} mentioned a fall`);
+  const urgent = c.urgent.filter((u) => !/fall|fell/.test(u));
+  if (urgent.length) add("urgent", "red", `Said: ${urgent.join(", ")}`, `${name} mentioned ${urgent.join(", ")}`);
+  if (c.pain !== null && c.pain >= 7) add("pain_high", "red", `Pain ${c.pain}/10 (severe)`, `${name} is in a lot of pain`);
+  else if (c.pain !== null && c.pain >= 4) add("pain", "yellow", `Pain ${c.pain}/10`, `${name} is in some pain`);
+  const missed = c.meds.filter((m) => m.taken === "no").map((m) => m.name);
+  if (missed.length) add("med_missed", "yellow", `Missed dose: ${missed.join(", ")}`, `${name} missed a medication`);
+  const unsure = c.meds.filter((m) => m.taken === "unclear").map((m) => m.name);
+  if (unsure.length) add("med_unclear", "yellow", `Couldn't confirm dose: ${unsure.join(", ")}`, `We couldn't confirm ${name}'s medication`);
+  if (c.mood !== null && c.mood <= 2) add("mood_low", "yellow", `Mood ${c.mood}/5 (low)`, `${name}'s mood is low today`);
+  if (c.sleepHours !== null && c.sleepHours < 5) add("sleep_short", "yellow", `Slept ${c.sleepHours} h (under 5 h)`, `${name} slept poorly`);
+  if (c.meals < 2) add("meals_low", "yellow", `${c.meals} meal${c.meals === 1 ? "" : "s"} so far (under 2)`, `${name} is eating less today`);
+  if (c.fluids === "low") add("fluids_low", "yellow", "Low fluids", `${name} isn't drinking much`);
+  for (const a of (c.answers ?? []).filter((x) => x.flagged)) {
+    const what = a.answer === "unclear" ? "couldn't confirm an answer" : `answered ${a.answer}`;
+    const quote = a.said ? ` — "${a.said}"` : "";
+    add(`question:${a.question}`, "yellow", `Care team question "${a.question}": ${what}${quote}`, `${name}: a check from the care team needs a look (${a.question.replace(/\?$/, "")})`);
+  }
+  return out;
+}
+
+/** Status of one check-in: the most serious finding, or green when nothing fired. */
 export function checkInStatus(c: CheckIn | undefined): Status {
   if (!c) return "yellow";
-  if (!c.answered || c.fall || c.urgent.length > 0 || (c.pain ?? 0) >= 7) return "red";
-  const missedDose = c.meds.some((m) => m.taken !== "yes");
-  if (
-    missedDose ||
-    (c.mood !== null && c.mood <= 2) ||
-    (c.pain ?? 0) >= 4 ||
-    c.fluids === "low" ||
-    c.meals < 2 ||
-    (c.sleepHours !== null && c.sleepHours < 5) ||
-    (c.answers ?? []).some((a) => a.flagged)
-  )
-    return "yellow";
-  return "green";
+  const f = findings(c);
+  return f.some((x) => x.status === "red") ? "red" : f.length ? "yellow" : "green";
 }
 
 export function latestCheckIn(p: Patient): CheckIn | undefined {
   return [...p.checkIns].sort((a, b) => b.date.localeCompare(a.date))[0];
 }
 
+const dayOf = (iso: string) => new Date(iso).toDateString();
+
+/** All check-ins on the same calendar day as the latest one. */
+export function latestDayCheckIns(p: Patient): CheckIn[] {
+  const last = latestCheckIn(p);
+  return last ? p.checkIns.filter((c) => dayOf(c.date) === dayOf(last.date)) : [];
+}
+
+/** A patient's colour is the worst colour of their latest day, so a later "I'm fine" call can't hide a fall. */
 export function patientStatus(p: Patient): Status {
-  return checkInStatus(latestCheckIn(p));
+  const day = latestDayCheckIns(p);
+  if (!day.length) return "yellow";
+  const all = day.map(checkInStatus);
+  return all.includes("red") ? "red" : all.includes("yellow") ? "yellow" : "green";
 }
 
 export function adherence(checkIns: CheckIn[]): number | null {
@@ -147,22 +188,16 @@ export function adherence(checkIns: CheckIn[]): number | null {
 export function alertsForCheckIn(p: Patient, c: CheckIn): Omit<Alert, "id">[] {
   const family = p.contacts.filter((x) => x.kind === "family" && p.sharedWith.includes(x.id)).map((x) => x.name);
   const care = p.contacts.filter((x) => x.kind === "care").map((x) => x.name);
-  const out: Omit<Alert, "id">[] = [];
-  if (!c.answered) {
-    out.push({ patientId: p.id, at: c.date, level: "urgent", message: `${p.preferredName} did not answer today's check-in call.`, notified: [...family, ...care] });
-    return out;
-  }
-  if (c.fall) out.push({ patientId: p.id, at: c.date, level: "urgent", message: `${p.preferredName} reported a fall.`, notified: [...family, ...care] });
-  const other = c.urgent.filter((u) => !/fall|fell/.test(u));
-  if (other.length) out.push({ patientId: p.id, at: c.date, level: "urgent", message: `${p.preferredName} mentioned: ${other.join(", ")}.`, notified: [...family, ...care] });
-  const missed = c.meds.filter((m) => m.taken === "no").map((m) => m.name);
-  if (missed.length) out.push({ patientId: p.id, at: c.date, level: "warning", message: `Missed dose: ${missed.join(", ")}.`, notified: [...family, ...care] });
-  for (const a of (c.answers ?? []).filter((x) => x.flagged)) {
-    const what = a.answer === "unclear" ? "couldn't confirm an answer" : `answered ${a.answer}`;
-    const quote = a.said ? ` — "${a.said}"` : "";
-    out.push({ patientId: p.id, at: c.date, level: "warning", message: `Care team question "${a.question}": ${what}${quote}`, notified: [...family, ...care] });
-  }
-  return out;
+  // Routing (decided Nov 7): red and yellow both go to the care team and to family the senior shares with.
+  return findings(c, p.preferredName).map((f) => ({
+    patientId: p.id,
+    at: c.date,
+    level: f.status === "red" ? "urgent" : "warning",
+    message: f.clinician,
+    family: f.family,
+    key: f.key,
+    notified: [...family, ...care],
+  }));
 }
 
 // ---------- Sample data ----------

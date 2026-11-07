@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertsForCheckIn, checkAnswers, detectUrgent, checkInStatus, createSampleState, isAnswerFlagged, type CheckIn } from "./care";
+import { alertsForCheckIn, checkAnswers, detectUrgent, checkInStatus, createSampleState, findings, isAnswerFlagged, patientStatus, type CheckIn } from "./care";
 
 const ok: CheckIn = {
   id: "x", date: new Date().toISOString(), answered: true, meds: [{ name: "Metformin", taken: "yes" }],
@@ -102,4 +102,52 @@ describe("care team question rules", () => {
     expect(a.level).toBe("warning");
     expect(a.message).toContain('"No, I skipped it"');
   });
+});
+
+describe("every flag has a reason (#6)", () => {
+  const keys = (c: CheckIn) => findings(c).map((f) => `${f.key}:${f.status}`);
+  it("finds nothing on a good day", () => expect(findings(ok)).toEqual([]));
+  it.each([
+    [{ mood: 1 }, "mood_low:yellow", "Mood 1/5 (low)"],
+    [{ sleepHours: 4 }, "sleep_short:yellow", "Slept 4 h (under 5 h)"],
+    [{ meals: 1 }, "meals_low:yellow", "1 meal so far (under 2)"],
+    [{ fluids: "low" as const }, "fluids_low:yellow", "Low fluids"],
+    [{ pain: 5 }, "pain:yellow", "Pain 5/10"],
+    [{ pain: 8 }, "pain_high:red", "Pain 8/10 (severe)"],
+    [{ fall: true }, "fall:red", "Reported a fall"],
+    [{ urgent: ["chest pain"] }, "urgent:red", "Said: chest pain"],
+    [{ meds: [{ name: "Metformin", taken: "no" as const }] }, "med_missed:yellow", "Missed dose: Metformin"],
+    [{ meds: [{ name: "Metformin", taken: "unclear" as const }] }, "med_unclear:yellow", "Couldn't confirm dose: Metformin"],
+  ])("%o gives %s", (change, key, text) => {
+    const c = { ...ok, ...change };
+    expect(keys(c)).toEqual([key]);
+    expect(findings(c)[0]!.clinician).toBe(text);
+  });
+  it("a missed call is only that one red reason", () => expect(keys({ ...ok, answered: false, mood: 1 })).toEqual(["no_answer:red"]));
+  it("lists several reasons at once", () => expect(keys({ ...ok, mood: 2, sleepHours: 4 })).toEqual(["mood_low:yellow", "sleep_short:yellow"]));
+  it("keeps the thresholds exact (mood 3, 5 h sleep, 2 meals, pain 3 are fine)", () =>
+    expect(findings({ ...ok, mood: 3, sleepHours: 5, meals: 2, pain: 3 })).toEqual([]));
+
+  it("creates one alert per reason, with plain words for family", () => {
+    const p = createSampleState().patients.find((x) => x.id === "margaret")!;
+    const a = alertsForCheckIn(p, { ...ok, mood: 1, sleepHours: 4 });
+    expect(a.map((x) => x.message)).toEqual(["Mood 1/5 (low)", "Slept 4 h (under 5 h)"]);
+    expect(a[0]!.family).toBe(`${p.preferredName}'s mood is low today`);
+    expect(a[0]!.level).toBe("warning");
+    expect(a[0]!.key).toBe("mood_low");
+  });
+});
+
+describe("a day takes its worst colour (#6)", () => {
+  const p = createSampleState().patients.find((x) => x.id === "margaret")!;
+  const at = (h: number) => new Date(2026, 10, 7, h).toISOString();
+  it("a fall in the morning stays red after a fine afternoon call", () => {
+    const checkIns = [{ ...ok, id: "a", date: at(9), fall: true }, { ...ok, id: "b", date: at(14) }];
+    expect(patientStatus({ ...p, checkIns })).toBe("red");
+  });
+  it("only the latest day counts, not earlier days", () => {
+    const checkIns = [{ ...ok, id: "a", date: new Date(2026, 10, 6, 9).toISOString(), fall: true }, { ...ok, id: "b", date: at(9) }];
+    expect(patientStatus({ ...p, checkIns })).toBe("green");
+  });
+  it("is yellow when there are no check-ins yet", () => expect(patientStatus({ ...p, checkIns: [] })).toBe("yellow"));
 });
