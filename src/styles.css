@@ -72,6 +72,11 @@
   --color-call-green: var(--call-green);
   --color-scene-ink: var(--scene-ink);
   --color-clinic-bg: var(--clinic-bg);
+  --color-pt-bg: var(--pt-bg);
+  --color-pt-panel: var(--pt-panel);
+  --color-pt-inner: var(--pt-inner);
+  --color-pt-btn: var(--pt-btn);
+  --color-pt-ink: var(--pt-ink);
   --color-risk: var(--risk);
   --color-risk-soft: var(--risk-soft);
   --color-risk-ink: var(--risk-ink);
@@ -142,6 +147,11 @@
   --call-green: oklch(0.8 0.17 145);
   --scene-ink: oklch(0.99 0 0);
   --clinic-bg: #eef2f6;
+  --pt-bg: #f2eae2;
+  --pt-panel: #d6bfa5;
+  --pt-inner: #f5ede3;
+  --pt-btn: #987153;
+  --pt-ink: #653f21;
   --risk: #eb6b6b;
   --risk-soft: #f4d2d2;
   --risk-ink: #d00000;

@@ -3,6 +3,7 @@ import { createFileRoute, Link, useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
 import type React from "react";
+import swirl from "@/assets/patient-swirl.svg";
 import { ArrowLeft, ChevronDown, Phone, Plus, Send, Trash2, AlertTriangle } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -39,8 +40,9 @@ function PatientPage() {
   const questions = state.questions.filter((q) => q.patientId === p.id);
 
   return (
-    <div className="min-h-screen bg-clinic-bg">
-    <main className="mx-auto max-w-5xl px-5 pb-24 pt-8">
+    <div className="relative min-h-screen overflow-hidden bg-pt-bg">
+    <img src={swirl} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover object-top" />
+    <main className="relative mx-auto max-w-5xl px-5 pb-24 pt-8">
       <Link to="/care" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" /> All patients
       </Link>
@@ -69,7 +71,7 @@ function PatientPage() {
       <AskRosie p={p} />
 
       <Panel title={`Questions from ${p.preferredName}`}>
-        <div className="bg-card p-5">
+        <div className="bg-pt-inner p-5">
           <p className="text-sm text-muted-foreground">Answers are explained on the next call.</p>
           <div className="mt-3 space-y-4">
             {questions.length === 0 && <p className="text-muted-foreground">No questions yet.</p>}
@@ -81,10 +83,10 @@ function PatientPage() {
       <PlanEditor p={p} />
 
       <Panel title="Check-in history">
-        <ul className="bg-card p-5">
+        <ul className="bg-pt-inner p-5">
           {checkIns.length === 0 && <li className="text-muted-foreground">No check-ins yet.</li>}
           {[...checkIns].reverse().map((c) => (
-            <li key={c.id} className="relative flex gap-4 border-l-2 border-watch/50 py-3 pl-5 last:border-transparent">
+            <li key={c.id} className="relative flex gap-4 border-l-4 border-watch/60 py-3 pl-5 last:border-transparent">
               <StatusDot status={checkInStatus(c)} className="absolute -left-[9px] top-4 shrink-0" />
               <div>
                 <p className="text-xl font-bold">
@@ -127,13 +129,13 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between bg-card px-6 py-4 text-left"
+        className="flex w-full items-center justify-between bg-card px-6 py-4 text-left shadow-[0_3px_3px_-1px_rgb(0_0_0/0.2)]"
       >
         <h2 className="text-3xl font-bold">{title}</h2>
         <ChevronDown className={`size-9 stroke-[1.5] transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden />
         <span className="sr-only">{open ? "Hide" : "Show"} {title}</span>
       </button>
-      {open && <div className="bg-update-soft p-6">{children}</div>}
+      {open && <div className="bg-pt-panel p-6 text-pt-ink">{children}</div>}
     </section>
   );
 }
@@ -166,7 +168,7 @@ function Flags({ checkIns }: { checkIns: CheckIn[] }) {
 function Trend({ title, data, pick, domain, color }: { title: string; data: CheckIn[]; pick: (c: CheckIn) => number | null; domain: [number, number]; color: string }) {
   const rows = data.map((c) => ({ day: format(new Date(c.date), "MMM d"), v: pick(c) }));
   return (
-    <div className="bg-card p-5">
+    <div className="bg-pt-inner p-5">
       <p className="mb-3 font-bold">{title}</p>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
@@ -188,7 +190,7 @@ function QuestionItem({ q }: { q: { id: string; patientId: string; text: string;
   const { account } = useRouteContext({ from: "/_authenticated" });
   return (
     <div className="border-b border-border pb-4 last:border-0">
-      <p className="text-lg">“{q.text}”</p>
+      <p className="text-lg text-pt-btn">“{q.text}”</p>
       <p className="text-xs text-muted-foreground">{format(new Date(q.askedAt), "MMM d, h:mm a")}</p>
       {q.answer ? (
         <p className="mt-2 text-sm">
@@ -203,8 +205,8 @@ function QuestionItem({ q }: { q: { id: string; patientId: string; text: string;
             if (text.trim()) void care.answerQuestion(q.patientId, q.id, text.trim(), account.displayName);
           }}
         >
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type an answer…" className="rounded-none bg-clinic-bg" />
-          <Button type="submit" className="rounded-none" aria-label="Send answer"><Send /> Send</Button>
+          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Type an answer…" className="rounded-none bg-card" />
+          <Button type="submit" className="rounded-none bg-pt-btn text-primary-foreground hover:bg-pt-ink" aria-label="Send answer"><Send /> Send</Button>
         </form>
       )}
     </div>
@@ -219,23 +221,23 @@ function PlanEditor({ p }: { p: Patient }) {
   const pending = p.planChanges.filter((c) => !c.deliveredAt);
   return (
     <Panel title="Care plan">
-      <div className="bg-card p-5">
+      <div className="bg-pt-inner p-5">
       <p className="text-sm text-muted-foreground">Rosie explains changes on the next call.</p>
       <ul className="mt-4 space-y-2">
         {items.map((i, idx) => (
-          <li key={idx} className="flex items-center justify-between gap-2 rounded-xl bg-muted px-3 py-2">
+          <li key={idx} className="flex items-center justify-between gap-2 bg-card px-3 py-2">
             {i}
             <Button size="icon" variant="ghost" aria-label="Remove" onClick={() => setItems(items.filter((_, j) => j !== idx))}><Trash2 /></Button>
           </li>
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add a plan item" />
-        <Button variant="outline" onClick={() => { if (newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }}><Plus /> Add</Button>
+        <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add a plan item" className="rounded-none bg-card" />
+        <Button className="rounded-none bg-pt-btn text-primary-foreground hover:bg-pt-ink" onClick={() => { if (newItem.trim()) { setItems([...items, newItem.trim()]); setNewItem(""); } }}><Plus /> Add</Button>
       </div>
-      <Textarea className="mt-4" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed, in plain words (e.g. 'Take your water pill at lunch instead of breakfast')" />
+      <Textarea className="mt-4 rounded-none bg-card" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What changed, in plain words (e.g. 'Take your water pill at lunch instead of breakfast')" />
       <Button
-        className="mt-3"
+        className="mt-3 rounded-none bg-pt-btn text-primary-foreground hover:bg-pt-ink"
         disabled={!dirty && !note.trim()}
         onClick={() => {
           void care.addPlanChange(p.id, note.trim() || "The care plan was updated.", items);
@@ -278,7 +280,7 @@ function AskRosie({ p }: { p: Patient }) {
         }}
       >
         <Input className="min-w-64 flex-1 rounded-none bg-card" value={text} onChange={(e) => setText(e.target.value)} placeholder="Type question here… e.g. Did you do your dialysis today?" />
-        <div className="flex items-center gap-2 bg-card px-3 py-1.5 text-sm" role="group" aria-label="Flag if answer is">
+        <div className="flex items-center gap-2 bg-pt-btn px-3 py-1 text-sm text-primary-foreground" role="group" aria-label="Flag if answer is">
           Flag if answer is:
           {(["yes", "no"] as const).map((v) => (
             <button
@@ -286,24 +288,24 @@ function AskRosie({ p }: { p: Patient }) {
               type="button"
               aria-pressed={flagIf === v}
               onClick={() => setFlagIf(flagIf === v ? "" : v)}
-              className={`px-3 py-0.5 font-bold ${flagIf === v ? (v === "yes" ? "bg-status-green text-primary-foreground" : "bg-status-red text-primary-foreground") : "bg-muted"}`}
+              className={`px-3 py-0.5 font-bold ${flagIf === v ? (v === "yes" ? "bg-status-green text-primary-foreground" : "bg-status-red text-primary-foreground") : "bg-pt-inner/30"}`}
             >
               {v}
             </button>
           ))}
-          {!flagIf && <span className="text-muted-foreground">(never, just record)</span>}
+          {!flagIf && <span className="opacity-80">(never, just record)</span>}
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" className="size-4" checked={daily} onChange={(e) => setDaily(e.target.checked)} /> Ask every day
         </label>
-        <Button type="submit" className="rounded-none" disabled={busy || !text.trim()}><Plus /> Add question</Button>
+        <Button type="submit" className="rounded-none bg-pt-btn text-primary-foreground hover:bg-pt-ink" disabled={busy || !text.trim()}><Plus /> Add question</Button>
       </form>
-      <ul className="mt-4 space-y-3 bg-card p-5">
+      <ul className="mt-4 space-y-3 bg-pt-inner p-5">
         {list.length === 0 && <li className="text-muted-foreground">No questions queued.</li>}
         {list.map((q) => (
           <li key={q.id} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0">
             <div>
-              <p className="text-lg">“{q.text}”</p>
+              <p className="text-lg text-pt-btn">“{q.text}”</p>
               <p className="text-xs text-muted-foreground">
                 {q.askedBy} · {format(new Date(q.createdAt), "MMM d, h:mm a")} · {q.daily ? "Every day" : "Once"} · {q.flagIf ? `Flag if ${q.flagIf} or unclear` : "No flag"}
               </p>
