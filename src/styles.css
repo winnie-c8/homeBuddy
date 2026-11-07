@@ -73,6 +73,7 @@
   --color-scene-ink: var(--scene-ink);
   --color-clinic-bg: var(--clinic-bg);
   --color-clinic-heading: var(--clinic-heading);
+  --color-clinic-action: var(--clinic-action);
   --color-pt-bg: var(--pt-bg);
   --color-pt-panel: var(--pt-panel);
   --color-pt-inner: var(--pt-inner);
@@ -159,6 +160,7 @@
   --scene-ink: oklch(0.99 0 0);
   --clinic-bg: oklch(0.405618 0.068861 57.4462);
   --clinic-heading: oklch(0.817280 0.043965 70.5719);
+  --clinic-action: oklch(0.45 0.09 240);
   --pt-bg: oklch(0.401518 0.069824 54.2838);
   --pt-panel: #d6bfa5;
   --pt-inner: #f5ede3;
