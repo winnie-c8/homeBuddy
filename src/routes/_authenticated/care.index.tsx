@@ -52,6 +52,9 @@ function CareDashboard() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px]">
         <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-soft)]">
+          {patients.length === 0 && (
+            <p className="p-8 text-muted-foreground">No patients yet. Ask a patient for their Hearthline code and add it on the right.</p>
+          )}
           {patients.map((p) => {
             const last = latestCheckIn(p);
             const qs = state.questions.filter((q) => q.patientId === p.id && !q.answer).length;
