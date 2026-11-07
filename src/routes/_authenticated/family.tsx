@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow, format } from "date-fns";
 import { BellRing, Lock, Pill } from "lucide-react";
@@ -5,7 +6,8 @@ import { Loading, StatusBadge } from "@/components/status-badge";
 import { useCare } from "@/lib/care-store";
 import { adherence, latestCheckIn, patientStatus } from "@/lib/care";
 
-export const Route = createFileRoute("/family")({
+export const Route = createFileRoute("/_authenticated/family")({
+  beforeLoad: ({ context }) => requireRole(context.account, "family"),
   head: () => ({
     meta: [
       { title: "Family view — Hearthline" },

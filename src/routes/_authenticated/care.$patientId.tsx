@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -10,7 +11,8 @@ import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { checkInStatus, patientStatus, type CheckIn, type Patient } from "@/lib/care";
 
-export const Route = createFileRoute("/care/$patientId")({
+export const Route = createFileRoute("/_authenticated/care/$patientId")({
+  beforeLoad: ({ context }) => requireRole(context.account, "care_team"),
   head: () => ({
     meta: [
       { title: "Patient details — Hearthline" },
