@@ -1,65 +1,95 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Phone, Users, Stethoscope, ShieldCheck, ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "homeBuddy — Stay independent at home, longer" },
-      { name: "description", content: "A friendly daily AI check-in call connects seniors, families and their care team. No screens or tech skills needed." },
-      { property: "og:title", content: "homeBuddy — Stay independent at home, longer" },
-      { property: "og:description", content: "Daily AI check-in calls, medication follow-up and safety alerts for seniors and the people who care for them." },
+      { title: "Sign in — homeBuddy" },
+      { name: "description", content: "Choose patient, family or care team to sign in to homeBuddy, the friendly daily check-in call." },
+      { property: "og:title", content: "Sign in — homeBuddy" },
+      { property: "og:description", content: "Daily check-in calls for seniors, with family and the care team kept in the loop." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,
 });
 
-const roles = [
-  { to: "/senior", icon: Phone, who: "Margaret Thompson", role: "Senior, 82", text: "Take today's check-in call with Rosie." },
-  { to: "/family", icon: Users, who: "Daniel Thompson", role: "Son", text: "See how Mom is doing and get alerts." },
-  { to: "/care", icon: Stethoscope, who: "Dr. Anjali Patel", role: "Care team", text: "Review patients, answer questions, update plans." },
-] as const;
+const shadow = { textShadow: "0 3px 6px rgb(0 0 0 / 0.25)" };
+
+function Banner({ role, label, bg, ink, scene, icon }: { role: "senior" | "family" | "care_team"; label: string; bg: string; ink: string; scene: ReactNode; icon: ReactNode }) {
+  return (
+    <Link
+      to="/auth"
+      search={{ role, redirect: undefined }}
+      aria-label={`Sign in as ${label}`}
+      className={`group relative block h-36 overflow-hidden transition-transform hover:-translate-y-1 focus-visible:outline-4 focus-visible:outline-ring md:h-40 ${bg}`}
+    >
+      <svg viewBox="0 0 700 140" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden="true">
+        {scene}
+      </svg>
+      <span className={`absolute left-5 top-1/2 grid size-24 -translate-y-1/2 place-items-center bg-scene-ink md:size-28 ${ink}`}>{icon}</span>
+      <span style={shadow} className="absolute left-36 top-1/2 -translate-y-1/2 text-5xl font-bold text-scene-ink md:left-44 md:text-6xl">
+        {label}
+      </span>
+    </Link>
+  );
+}
 
 function Index() {
   return (
-    <main className="mx-auto max-w-6xl px-5 pb-24 pt-16">
-      <section className="max-w-3xl">
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground">
-          <ShieldCheck className="size-4" /> Built for PHIPA / HIPAA privacy
-        </p>
-        <h1 className="text-5xl font-semibold leading-[1.05] text-foreground md:text-7xl">
-          A friendly voice every morning. <span className="text-accent">Peace of mind</span> for everyone.
-        </h1>
-        <p className="mt-6 max-w-2xl text-xl leading-relaxed text-muted-foreground">
-          homeBuddy calls at the same time each day to check on medications, meals, sleep, pain, mood and falls —
-          then keeps family and the care team in the loop.
-        </p>
-      </section>
-
-      <section className="mt-14">
-        <h2 className="mb-1 text-2xl font-semibold">Try the demo as…</h2>
-        <p className="mb-6 text-muted-foreground">Sample patients for now — real sign-in comes next.</p>
-        <div className="grid gap-5 md:grid-cols-3">
-          {roles.map((r) => (
-            <Link
-              key={r.to}
-              to={r.to}
-              className="group rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-soft)] transition-transform hover:-translate-y-1"
-            >
-              <span className="grid size-12 place-items-center rounded-2xl bg-secondary text-primary">
-                <r.icon className="size-6" />
-              </span>
-              <p className="mt-5 font-display text-2xl font-semibold">{r.who}</p>
-              <p className="text-sm text-muted-foreground">{r.role}</p>
-              <p className="mt-3 text-lg">{r.text}</p>
-              <span className="mt-5 inline-flex items-center gap-1 font-bold text-primary">
-                Continue <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-              </span>
-            </Link>
-          ))}
-        </div>
-      </section>
+    <main className="mx-auto max-w-3xl px-5 pb-20 pt-10">
+      <h1 className="text-6xl font-bold text-foreground">homeBuddy</h1>
+      <p className="mt-2 text-lg italic">click an option to sign in</p>
+      <div className="mt-6 space-y-6">
+        <Banner
+          role="senior"
+          label="patient"
+          bg="bg-sky-1"
+          ink="text-sky-3"
+          icon={<svg viewBox="0 0 64 64" className="size-20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round"><circle cx="30" cy="20" r="12" /><path d="M8 58c0-14 10-22 22-22s22 8 22 22" /><path d="M44 44v14M37 51h14" /></svg>}
+          scene={
+            <>
+              <g className="fill-sky-3">
+                <circle cx="230" cy="110" r="70" /><circle cx="360" cy="120" r="60" /><circle cx="520" cy="110" r="70" /><circle cx="650" cy="100" r="80" />
+              </g>
+              <g className="fill-sky-2">
+                <circle cx="20" cy="140" r="70" /><circle cx="140" cy="150" r="60" /><circle cx="280" cy="150" r="55" /><circle cx="420" cy="150" r="60" /><circle cx="560" cy="150" r="60" /><circle cx="690" cy="140" r="65" />
+              </g>
+            </>
+          }
+        />
+        <Banner
+          role="family"
+          label="family"
+          bg="bg-meadow-1"
+          ink="text-meadow-ink"
+          icon={<svg viewBox="0 0 64 64" className="size-20" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round"><circle cx="16" cy="22" r="8" /><circle cx="48" cy="18" r="8" /><circle cx="32" cy="32" r="8" /><path d="M4 46c0-8 5-12 12-12M60 42c0-8-5-12-12-12M18 60c0-9 6-14 14-14s14 5 14 14" /></svg>}
+          scene={
+            <>
+              <path className="fill-meadow-3" d="M0 90 L60 50 L120 100 L200 40 L270 90 L330 30 L400 100 L470 45 L540 95 L620 20 L700 70 L700 140 L0 140Z" />
+              <path className="fill-meadow-2" d="M0 140 L70 80 L150 140 L230 60 L300 130 L380 70 L450 140 L520 75 L600 140 L660 60 L700 100 L700 140Z" />
+            </>
+          }
+        />
+        <Banner
+          role="care_team"
+          label="care team"
+          bg="bg-dusk-1"
+          ink="text-dusk-ink"
+          icon={<svg viewBox="0 0 64 64" className="size-20" fill="none" stroke="currentColor" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"><path d="M32 56S6 40 6 22a12 12 0 0 1 26-6 12 12 0 0 1 26 6c0 18-26 34-26 34Z" /><path d="M32 22v18M23 31h18" /></svg>}
+          scene={
+            <>
+              <g className="fill-dusk-3">
+                <rect x="160" y="50" width="70" height="90" /><rect x="300" y="70" width="60" height="70" /><rect x="420" y="40" width="80" height="100" /><rect x="530" y="30" width="120" height="110" /><rect x="640" y="50" width="60" height="90" />
+              </g>
+              <g className="fill-dusk-2">
+                <rect x="0" y="90" width="120" height="50" /><rect x="100" y="80" width="150" height="60" /><rect x="260" y="100" width="130" height="40" /><rect x="380" y="45" width="40" height="95" /><rect x="460" y="90" width="110" height="50" /><rect x="560" y="50" width="70" height="90" /><rect x="610" y="85" width="90" height="55" />
+              </g>
+            </>
+          }
+        />
+      </div>
     </main>
   );
 }
