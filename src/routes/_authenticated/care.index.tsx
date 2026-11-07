@@ -94,7 +94,7 @@ function CareDashboard() {
                 <JoinPatientCard
                   kind="care_team"
                   onDone={() => setAddOpen(false)}
-                  className="space-y-4 bg-card p-8 [&_button[type=submit]]:h-12 [&_button[type=submit]]:rounded-2xl [&_button[type=submit]]:text-lg [&_h3]:text-4xl [&_h3]:font-bold [&_input]:h-12 [&_input]:rounded-none [&_input]:bg-clinic-bg [&_input]:text-lg [&_label]:text-lg [&_p]:italic"
+                  className="space-y-4 bg-card p-8 [&_button[type=submit]]:h-12 [&_button[type=submit]]:rounded-2xl [&_button[type=submit]]:bg-clinic-action [&_button[type=submit]]:text-scene-ink [&_button[type=submit]]:hover:bg-clinic-action/90 [&_button[type=submit]]:text-lg [&_h3]:text-4xl [&_h3]:font-bold [&_input]:h-12 [&_input]:rounded-none [&_input]:bg-scene-ink [&_input]:text-pt-ink [&_input]:text-lg [&_label]:text-lg [&_p]:italic"
                 />
               </DialogContent>
             </Dialog>
