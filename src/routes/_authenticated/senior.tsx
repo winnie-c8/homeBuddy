@@ -144,7 +144,7 @@ function SeniorPage() {
   return (
     <main className="min-h-dvh bg-[image:var(--gradient-sky)] pb-24">
       <section className="relative isolate overflow-hidden px-5 pb-16 pt-10 text-center">
-        <svg viewBox="0 0 900 640" preserveAspectRatio="none" className="absolute inset-0 -z-10 size-full" aria-hidden="true">
+        <svg viewBox="0 0 900 640" preserveAspectRatio="none" className="absolute inset-0 -z-10 size-full" aria-hidden="true" style={{ maskImage: "linear-gradient(to bottom, #000 55%, transparent 96%)", WebkitMaskImage: "linear-gradient(to bottom, #000 55%, transparent 96%)" }}>
           <path className="fill-sky-3" d="M0 140 Q60 110 100 160 L120 300 Q200 250 330 300 L360 520 Q450 440 600 400 Q650 350 720 380 L780 420 Q800 250 860 120 Q890 70 900 90 V640 H0Z" />
           <path className="fill-sky-1" opacity="0.85" d="M0 230 Q80 210 110 290 L120 360 Q220 330 330 380 Q360 470 380 520 Q470 470 560 470 Q600 380 690 410 L780 470 Q790 300 850 210 Q890 180 900 200 V640 H0Z" />
         </svg>
