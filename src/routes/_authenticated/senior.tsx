@@ -10,7 +10,7 @@ import { Loading } from "@/components/status-badge";
 import { useLiveVoice, type LiveEvent } from "@/hooks/use-live-voice";
 import { care, patientRows, useCare } from "@/lib/care-store";
 import { SeniorSetup } from "@/components/senior-setup";
-import { callContext, detectUrgent } from "@/lib/care";
+import { callContext, detectUrgent, greetingFor } from "@/lib/care";
 import { summarizeCheckIn, type CheckInSummary } from "@/lib/checkin.functions";
 
 export const Route = createFileRoute("/_authenticated/senior")({
@@ -74,7 +74,7 @@ function SeniorPage() {
     const patient = state?.patients.find((p) => p.id === PATIENT_ID);
     if (!patient) return;
     setPhase("saving");
-    summarize({ data: { transcript, meds: patient.meds.map((m) => m.name) } })
+    summarize({ data: { transcript, meds: patient.meds.map((m) => m.name), name: patient.name } })
       .catch((): CheckInSummary => {
         // AI summary unavailable: still save the call so the care team sees it.
         const said = transcript.filter((r) => r.role === "user").map((r) => r.text.trim()).join(" ");
@@ -82,7 +82,7 @@ function SeniorPage() {
           meds: patient.meds.map((m) => ({ name: m.name, taken: "unclear" as const })),
           meals: 0, fluids: "unknown", sleepHours: null, mood: null, pain: null, fall: false,
           urgent: [], questions: [],
-          summary: `Automatic summary unavailable. The senior said: "${said.slice(0, 600)}"`,
+          summary: `Automatic summary unavailable. ${patient.preferredName} said: "${said.slice(0, 600)}"`,
         };
       })
       .then((s) => {
@@ -129,8 +129,7 @@ function SeniorPage() {
     voice.start(callContext(patient, state.questions));
   };
 
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greet = greetingFor(new Date());
 
   return (
     <main className="mx-auto max-w-3xl px-5 pb-24 pt-12 text-center">
