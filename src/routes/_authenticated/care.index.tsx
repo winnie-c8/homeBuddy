@@ -8,6 +8,7 @@ import { Loading } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import careCircles from "@/assets/care-circles.svg";
 import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, alertStage, latestCheckIn, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type Status } from "@/lib/care";
 
@@ -77,6 +78,7 @@ function CareDashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-clinic-bg">
+      <img src={careCircles} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-fill" />
       <main className="relative mx-auto max-w-6xl px-5 pb-24 pt-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
