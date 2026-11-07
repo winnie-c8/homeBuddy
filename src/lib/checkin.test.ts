@@ -90,7 +90,7 @@ describe("care-team answers", () => {
     vi.stubGlobal("fetch", vi.fn(async (_u: string, init: RequestInit) => { body = String(init.body); return okResponse(); }));
     await runSummary({ ...DATA, clinicianQuestions: ["Is your ankle swelling better?"] });
     expect(body).toContain("Is your ankle swelling better?");
-    expect(body).toContain('\\"concern\\"');
+    expect(body).toContain('"concern"');
   });
 
   it("defaults to no answers when the model leaves the field out", async () => {
