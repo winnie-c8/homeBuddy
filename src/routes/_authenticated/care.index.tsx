@@ -42,6 +42,31 @@ function CareDashboard() {
   const counts = { red: 0, yellow: 0, green: 0 } as Record<Status, number>;
   patients.forEach((p) => counts[patientStatus(p)]++);
   const openAlerts = state.alerts.filter((a) => !a.acknowledged);
+  const handled = state.alerts
+    .filter((a) => a.acknowledged)
+    .sort((a, b) => (b.resolvedAt ?? b.at).localeCompare(a.resolvedAt ?? a.at))
+    .slice(0, 8);
+
+  const openResolve = (a: Alert) => {
+    setResolving(a);
+    setNote("");
+    setResolveError("");
+    setSaving(false);
+  };
+
+  const submitResolve = async () => {
+    if (!resolving || !note.trim()) return;
+    setSaving(true);
+    setResolveError("");
+    try {
+      await care.acknowledgeAlert(resolving.patientId, resolving.id, note.trim(), account.displayName);
+      setResolving(null);
+    } catch (e) {
+      setResolveError(e instanceof Error ? e.message : "Could not save this note. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const cardStyle: Record<Status, { card: string; box: string; title: string; label: string }> = {
     red: { card: "bg-risk", box: "bg-risk-soft", title: "text-risk-ink", label: "HIGH RISK" },
