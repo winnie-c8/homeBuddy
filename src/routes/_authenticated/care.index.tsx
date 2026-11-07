@@ -1,10 +1,11 @@
 import { requireRole } from "@/lib/auth";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
-import { BellRing, MessageCircleQuestion, RotateCcw } from "lucide-react";
+import { BellRing, MessageCircleQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Loading, StatusBadge, StatusDot } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
+import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, latestCheckIn, patientStatus, type Status } from "@/lib/care";
 
 export const Route = createFileRoute("/_authenticated/care/")({
@@ -26,6 +27,7 @@ const order: Record<Status, number> = { red: 0, yellow: 1, green: 2 };
 
 function CareDashboard() {
   const state = useCare();
+  const { account } = Route.useRouteContext();
   if (!state) return <Loading />;
   const patients = [...state.patients].sort((a, b) => order[patientStatus(a)] - order[patientStatus(b)]);
   const counts = { red: 0, yellow: 0, green: 0 } as Record<Status, number>;
@@ -36,7 +38,7 @@ function CareDashboard() {
     <main className="mx-auto max-w-6xl px-5 pb-24 pt-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-muted-foreground">Dr. Anjali Patel · Today</p>
+          <p className="text-muted-foreground">{account.displayName} · Today</p>
           <h1 className="text-4xl font-semibold">Your patients</h1>
         </div>
         <div className="flex gap-3">
@@ -92,16 +94,14 @@ function CareDashboard() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(a.at), { addSuffix: true })} · Notified {a.notified.join(", ")}
                   </p>
-                  <Button size="sm" variant="outline" className="mt-2 rounded-full" onClick={() => care.acknowledgeAlert(a.id)}>
+                  <Button size="sm" variant="outline" className="mt-2 rounded-full" onClick={() => void care.acknowledgeAlert(a.patientId, a.id)}>
                     Mark handled
                   </Button>
                 </div>
               );
             })}
           </div>
-          <Button variant="ghost" size="sm" className="mt-6 text-muted-foreground" onClick={() => care.reset()}>
-            <RotateCcw /> Reset sample data
-          </Button>
+          <JoinPatientCard kind="care_team" />
         </aside>
       </div>
     </main>
