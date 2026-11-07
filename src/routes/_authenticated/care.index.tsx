@@ -8,6 +8,7 @@ import { Loading } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import careCircles from "@/assets/care-circles.svg";
 import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, alertStage, latestCheckIn, patientStatus, sortAlertsForClinician, waitingFor, type Alert, type Status } from "@/lib/care";
 
