@@ -8,7 +8,6 @@ import { Loading } from "@/components/status-badge";
 import { care, useCare } from "@/lib/care-store";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import swirl from "@/assets/care-swirl.svg";
 import { JoinPatientCard } from "@/components/join-patient";
 import { adherence, latestCheckIn, patientStatus, type Alert, type Status } from "@/lib/care";
 
@@ -77,7 +76,6 @@ function CareDashboard() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-clinic-bg">
-      <img src={swirl} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 size-full object-cover" />
       <main className="relative mx-auto max-w-6xl px-5 pb-24 pt-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
