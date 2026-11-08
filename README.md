@@ -99,5 +99,5 @@ GEMINI_API_KEY=your-gemini-api-key
 
 Built in 7 hours by:
 - **Winnie Chen** ([@winnie-c8](https://github.com/winnie-c8))
-- **Kaitlyn** ([@kaitlynlaichan](https://github.com/kaitlynlaichan))
-- **Caitlin** ([@clim08-source](https://github.com/clim08-source))
+- **Kaitlyn Chan** ([@kaitlynlaichan](https://github.com/kaitlynlaichan))
+- **Caitlin Lim** ([@clim08-source](https://github.com/clim08-source))
