@@ -106,44 +106,7 @@ Family members (`/family`) see today's colour, the latest summary and any alerts
 
 ## 🏗️ Architecture
 
-```mermaid
-sequenceDiagram
-    participant C as 👩‍⚕️ Clinician and<br/>family screens
-    participant DB as 🗄️ Supabase<br/>(database)
-    participant S as 📱 Older adult's<br/>call screen
-    participant V as 🔒 Our server
-    participant G as 🤖 Google Gemini
-
-    rect rgba(120, 160, 255, 0.12)
-    Note over C,DB: Before the call
-    C->>DB: Doctor saves check-in questions
-    DB->>S: Today's questions
-    end
-
-    rect rgba(120, 220, 160, 0.12)
-    Note over S,G: During the call
-    S->>V: Microphone audio + questions
-    V->>G: Live audio (Gemini Live)
-    G-->>V: Rosie's voice
-    V-->>S: Rosie's voice
-    end
-
-    rect rgba(255, 200, 100, 0.15)
-    Note over S,G: After the call
-    S->>V: Transcript
-    V->>G: Summarize (Gemini Flash)
-    G-->>V: Structured answers
-    V-->>S: Structured answers
-    Note over S: care.ts rules set<br/>colour + alerts
-    S->>DB: Save check-in, colour and alerts
-    end
-
-    rect rgba(255, 130, 130, 0.12)
-    Note over C,DB: Follow-up
-    DB-->>C: Screens refresh every 20 s
-    C->>DB: "On it", then "Mark handled" with a note
-    end
-```
+![How a check-in flows: the doctor saves questions, the older adult talks to Rosie through our server and Gemini, the rules colour the day, and the clinician and family screens pick it up](docs/screenshots/architecture.png)
 
 - **Before the call:** the doctor's questions are saved in Supabase, and the call screen loads them.
 - **During the call:** audio streams through our server to Gemini Live, and Rosie's voice streams back. Our server sits in the middle so the Gemini key never reaches the browser.
@@ -186,7 +149,7 @@ Each account's role (older adult, family or care team) is chosen once at signup.
 - the **Gemini key** was never in this repo (it lived only in our hosting settings);
 - the **Supabase address** in the code points to our project, so you'll swap in yours in step 2.
 
-**You'll need:** [Bun](https://bun.sh) (a JavaScript runtime and package manager, like Node.js + npm), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome (for microphone access).
+**You'll need:** [Bun](https://bun.sh) (a JavaScript runtime and package manager), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome (for microphone access).
 
 **1. Download and install**
 ```bash
