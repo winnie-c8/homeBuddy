@@ -21,7 +21,7 @@ After each daily check-in call, the day gets a colour that tells the care team h
 | Colour | Meaning | What causes it |
 | --- | --- | --- |
 | 🟢 Green | All good | Nothing flagged |
-| 🟡 Yellow | Keep an eye on it | A missed or unconfirmed medication, low mood (2/5 or less), under 5 hours of sleep, fewer than 2 meals, not drinking enough, pain of 4–6/10, or an answer the doctor asked to flag |
+| 🟡 Yellow | Keep an eye on it | A missed or unconfirmed medication, low mood (2/5 or less), under 5 hours of sleep, fewer than 2 meals, not drinking enough water, pain of 4–6/10, or an answer the doctor asked to flag |
 | 🔴 Red | Contact the patient today | A fall, urgent words like "chest pain" or "can't breathe", pain of 7/10 or more, or a yellow that keeps coming back |
 
 A yellow that repeats turns red. One bad night is worth watching, but three in a row suggests something is changing. The same reason (low mood, say) three days in a row turns the day red. For their own questions, the doctor decides how many flagged answers in a row it takes. Setting it to 1 makes a single flagged answer red straight away, which suits something like a skipped dialysis session.
