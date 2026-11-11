@@ -61,7 +61,7 @@ function SeniorPage() {
       const words = detectUrgent(next[next.length - 1]?.text ?? "").filter((w) => !alerted.current.has(w));
       if (words.length) {
         words.forEach((w) => alerted.current.add(w));
-        void care.raiseAlert(PATIENT_ID, `During today's call ${account.displayName} said: "${words.join('", "')}". Please check on her.`);
+        void care.raiseAlert(PATIENT_ID, `During today's call ${account.displayName} said: "${words.join('", "')}". Please check on them.`);
         toast.error("Your family and care team have been alerted.");
       }
     }
@@ -122,7 +122,7 @@ function SeniorPage() {
         setPhase("ready");
         toast.error("We couldn't save today's check-in. Please try the call again.");
       });
-  }, [voice.status, voice.hasConnected, phase, state, summarize]);
+  }, [voice.status, voice.hasConnected, phase, state, summarize, PATIENT_ID]);
 
   if (!state) return <Loading />;
   const patient = state.patients.find((p) => p.id === PATIENT_ID);
