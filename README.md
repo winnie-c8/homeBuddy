@@ -64,7 +64,7 @@ When a doctor takes an alert, they tap **On it**, so the rest of the team and th
 
 On each patient's page, the doctor also answers the older adult's questions and can look through charts of past answers to spot trends.
 
-### 5. Family stay in the loop
+### 5. Family remains informed
 
 Family members see today's colour, the latest summary and any alerts in plain language. They can also follow each alert's progress, from *"The care team has been told"* to *"Dr. Lee is on it"* to *"Resolved by Dr. Lee: Called Margaret, booked a dialysis appointment for Friday."* The family view is read-only, and the older adult can stop sharing with family at any time.
 
