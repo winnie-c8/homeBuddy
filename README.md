@@ -18,50 +18,9 @@ In a nursing home, staff check on residents every day. At home, nobody does. Hea
 
 ---
 
-## 🔁 How it's used: doctor → older adult → doctor → family
-
-### 1. The doctor sets up the check-in
-On a patient's page (`/care/:patientId`), the clinician writes the questions for that older adult, e.g. *"Did you do your dialysis today?"* or *"How many glasses of water today?"*. For each one, they choose:
-- **when to flag:** a yes/no answer, or a number above or below a limit;
-- **when it turns red:** after how many flagged days in a row;
-- **how often it's asked:** every day, every few days, or just once.
-
-They can also update the care plan (e.g. a new medication time), and Rosie will tell the older adult about it on the next call.
-
-> **In the code:** the questions are saved to the older adult's record in Supabase. Before each call, `callContext()` in `care.ts` turns them into the list of questions to ask that day.
-
-### 2. The older adult just talks
-The older adult opens `/senior` and taps one big button. **Rosie**, an AI voice companion, greets them and asks about sleep, meals, fluids, pain, mood, falls and medications, then the doctor's questions. If an answer is vague ("I think so"), she asks again in simpler words. No typing is needed.
-
-> **In the code:** the browser streams microphone audio over a WebSocket to our server (`/api/live`), which relays it to **Google Gemini Live** and streams Rosie's voice back. The server adds the day's questions and keeps the Gemini API key secret.
->
-> **Urgent words don't wait for the call to end.** While the older adult talks, the app checks each sentence for words like *"chest pain"*, *"fell"* or *"can't breathe"*. If it hears one, it sends a red alert to the care team and family right away, and tells the older adult they've been alerted.
-
-### 3. The call is summarized and screened
-When the call ends, the older adult sees a simple summary of what was said. Behind the scenes, the day is marked **🟢 green**, **🟡 yellow** or **🔴 red** (see [the rules](#-the-rules-green-yellow-red) below).
-
-> **In the code:** a server function (`runSummary` in `checkin.functions.ts`) sends the transcript to **Gemini Flash**, which returns structured answers: for each question, the older adult's words and *yes / no / unclear*. The rules in `care.ts` then colour the day and create alerts, each with the reason and the older adult's own words.
-
-### 4. The doctor follows up
-The care dashboard (`/care`) lists every patient sorted **red → yellow → green**, with open alerts at the top and how long each has waited. Red means contact the patient today, and yellow means keep an eye on it. Each alert says why, e.g. *"Mood 2/5 (low) 3 days in a row"*, with a quote from the call.
-
-Each alert moves through three stages:
-1. **New:** the care team has been told.
-2. **On it:** a clinician taps "On it", so the rest of the team (and the family) know someone is handling it.
-3. **Handled:** the clinician taps "Mark handled" and **must write a note** on what they did, e.g. *"Called Margaret, booked a dialysis appointment for Friday."* The note stays attached to that alert, with who handled it and when. Handled alerts move to a **Handled** list on the dashboard, so there's a record of every follow-up.
-
-The patient page also shows history charts for each question, so trends are easy to spot.
-
-### 5. Family stay in the loop
-Family members (`/family`) see today's colour, the latest summary and any alerts, in plain words. They also see each alert's follow-up as it happens: *"The care team has been told"* → *"Dr. Lee is on it"* → *"Resolved by Dr. Lee: Called Margaret, booked a dialysis appointment for Friday."* The family view is read-only.
-
-> **In the code:** all three screens read the same record and refresh every 20 seconds, so a check-in on the older adult's phone appears on the doctor's laptop. The database's access rules, not the UI, decide who can see and change what.
-
----
-
 ## 🚦 The rules: green, yellow, red
 
-Every check-in gets a colour. **The AI never decides the colour.** It only reports what the older adult said. Plain, tested code in [`src/lib/care.ts`](src/lib/care.ts) applies the rules, so the same answers always give the same result, and every flag can say exactly why it fired. 
+After each daily voice check-in, the day gets a colour that tells the care team how urgently to respond. **The AI never decides the colour.** It only reports what the older adult said. Plain, tested code in [`src/lib/care.ts`](src/lib/care.ts) applies the rules, so the same answers always give the same result, and every flag can say exactly why it fired. 
 
 | Colour | Meaning | What triggers it |
 | --- | --- | --- |
@@ -82,6 +41,47 @@ Every check-in gets a colour. **The AI never decides the colour.** It only repor
 | 🟢 Green | Green badge | Green status | Nothing extra |
 
 Family only see an older adult's information while the older adult chooses to share it with them.
+
+---
+
+## 🔁 How it's used: doctor → older adult → doctor → family
+
+### 1. The doctor sets up the check-in
+On a patient's page (`/care/:patientId`), the clinician writes the questions for that older adult, e.g. *"Did you do your dialysis today?"* or *"How many glasses of water today?"*. For each one, they choose:
+- **when to flag:** a yes/no answer, or a number above or below a limit;
+- **when it turns red:** after how many flagged days in a row;
+- **how often it's asked:** every day, every few days, or just once.
+
+They can also update the care plan (e.g. a new medication time), and Rosie will tell the older adult about it on the next call.
+
+> **In the code:** the questions are saved to the older adult's record in Supabase. Before each call, `callContext()` in `care.ts` turns them into the list of questions to ask that day.
+
+### 2. The older adult just talks
+The older adult opens `/senior` and taps one big button. **Rosie**, an AI voice companion, greets them and asks about sleep, meals, fluids, pain, mood, falls and medications, then the doctor's questions. If an answer is vague ("I think so"), she asks again in simpler words. No typing is needed.
+
+> **In the code:** the browser streams microphone audio over a WebSocket to our server (`/api/live`), which relays it to **Google Gemini Live** and streams Rosie's voice back. The server adds the day's questions and keeps the Gemini API key secret.
+>
+> **Urgent words don't wait for the call to end.** While the older adult talks, the app checks each sentence for words like *"chest pain"*, *"fell"* or *"can't breathe"*. If it hears one, it sends a red alert to the care team and family right away, and tells the older adult they've been alerted.
+
+### 3. The call is summarized and screened
+When the call ends, the older adult sees a simple summary of what was said. Behind the scenes, the day is marked **🟢 green**, **🟡 yellow** or **🔴 red** using [the rules](#-the-rules-green-yellow-red) above.
+
+> **In the code:** a server function (`runSummary` in `checkin.functions.ts`) sends the transcript to **Gemini Flash**, which returns structured answers: for each question, the older adult's words and *yes / no / unclear*. The rules in `care.ts` then colour the day and create alerts, each with the reason and the older adult's own words.
+
+### 4. The doctor follows up
+The care dashboard (`/care`) lists every patient sorted **red → yellow → green**, with open alerts at the top and how long each has waited. Red means contact the patient today, and yellow means keep an eye on it. Each alert says why, e.g. *"Mood 2/5 (low) 3 days in a row"*, with a quote from the call.
+
+Each alert moves through three stages:
+1. **New:** the care team has been told.
+2. **On it:** a clinician taps "On it", so the rest of the team (and the family) know someone is handling it.
+3. **Handled:** the clinician taps "Mark handled" and **must write a note** on what they did, e.g. *"Called Margaret, booked a dialysis appointment for Friday."* The note stays attached to that alert, with who handled it and when. Handled alerts move to a **Handled** list on the dashboard, so there's a record of every follow-up.
+
+The patient page also shows history charts for each question, so trends are easy to spot.
+
+### 5. Family stay in the loop
+Family members (`/family`) see today's colour, the latest summary and any alerts, in plain words. They also see each alert's follow-up as it happens: *"The care team has been told"* → *"Dr. Lee is on it"* → *"Resolved by Dr. Lee: Called Margaret, booked a dialysis appointment for Friday."* The family view is read-only.
+
+> **In the code:** all three screens read the same record and refresh every 20 seconds, so a check-in on the older adult's phone appears on the doctor's laptop. The database's access rules, not the UI, decide who can see and change what.
 
 ---
 
