@@ -30,7 +30,7 @@ Here's who hears about each colour:
 
 | | Doctor | Family | Older adult |
 | --- | --- | --- | --- |
-| 🔴 Red | At the top of the dashboard, with the reason and a quote from the call | An alert explaining what happened | Always sees "In an emergency, call 911" on screen |
+| 🔴 Red | At the top of the dashboard, with the reason | An alert explaining what happened | Always sees "In an emergency, call 911" on screen |
 | 🟡 Yellow | A yellow badge and an alert | An alert explaining what happened | Nothing extra |
 | 🟢 Green | A green badge | A green status | Nothing extra |
 
@@ -58,7 +58,7 @@ When the call ends, the older adult sees a simple summary of what they said. Beh
 
 ### 4. The doctor follows up
 
-The dashboard lists every patient, red first, then yellow, then green, with open alerts at the top showing how long each has been waiting. Every alert says why it was raised, for example *"Mood 2/5 (low) 3 days in a row"*, and quotes what the older adult said.
+The dashboard lists every patient, red first, then yellow, then green, with open alerts at the top showing how long each has been waiting. Every alert says why it was raised, for example *"Mood 2/5 (low) 3 days in a row"*, and where it can, quotes what the older adult said.
 
 When a doctor takes an alert, they tap **On it**, so the rest of the team and the family know someone is handling it. When it's dealt with, they tap **Mark handled** and have to write a note on what they did, such as *"Called Margaret, booked a dialysis appointment for Friday."* That note stays with the alert, along with who handled it and when, so every follow-up is on record.
 
@@ -124,13 +124,13 @@ bun install
 
 **2. Connect your Supabase project**
 1. In your Supabase dashboard, open the **SQL Editor** and run each file in `supabase/migrations/`, oldest first (they're named by date). This creates the tables and access rules. If you use the [Supabase CLI](https://supabase.com/docs/guides/cli), `supabase link` then `supabase db push` does the same.
-2. Under **Project Settings → API**, copy your **Project URL** and **publishable key**, and paste them over the two values at the top of `src/integrations/supabase/client.ts`:
+2. Copy your **Project URL** and **publishable key** (both are under **Project Settings**, or the **Connect** button at the top of the dashboard), and paste them over the two values at the top of `src/integrations/supabase/client.ts`:
    ```ts
    const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_...";
    ```
    Update the matching values in `.env` as well, so the two files agree.
-3. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:8080`. New Supabase projects ask people to confirm their email by default, so either click the link in the email or turn off **Confirm email** under **Authentication → Providers → Email** while you test.
+3. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:8080`. New Supabase projects ask people to confirm their email by default, so either click the link in the email or turn off **Confirm email** in the Email sign-in settings while you test.
 
 The publishable key is designed to be public, so it's fine in the code. Never put your Supabase *secret* key there.
 
