@@ -6,8 +6,6 @@ Built for the **PointClickCare Challenge** at the **Women in Engineering (WiE) H
 
 > ⚠️ homeBuddy is a hackathon prototype, not a medical device. It never diagnoses or gives treatment advice, and the older adult's screen always says to call 911 in an emergency. All patient data shown here is fictional.
 
----
-
 ## The problem
 
 Older adults living on their own often face health problems that build slowly: missed meals, growing tiredness, dehydration, skipped medications. Nobody notices until it ends in an emergency room visit.
@@ -15,8 +13,6 @@ Older adults living on their own often face health problems that build slowly: m
 In a nursing home, staff check on residents every day. At home, nobody does, and health portals don't fill the gap because they expect older adults to log in, type and find their way around complex screens.
 
 homeBuddy replaces the daily form and the nurse's phone call with a short, friendly voice call, and passes what it hears to the care team and family.
-
----
 
 ## The rules: green, yellow, red
 
@@ -37,8 +33,6 @@ Here's who hears about each colour:
 | 🔴 Red | At the top of the dashboard, with the reason and a quote from the call | An alert explaining what happened | Always sees "In an emergency, call 911" on screen |
 | 🟡 Yellow | A yellow badge and an alert | An alert explaining what happened | Nothing extra |
 | 🟢 Green | A green badge | A green status | Nothing extra |
-
----
 
 ## How it's used
 
@@ -76,8 +70,6 @@ Family members see today's colour, the latest summary and any alerts in plain la
 
 All three screens update every 20 seconds, so a check-in on the older adult's phone shows up on the doctor's laptop within moments.
 
----
-
 ## Screenshots
 
 **Doctor's dashboard.** Margaret is red because she missed dialysis. Clarissa is yellow because she's drinking less water than her doctor wants.
@@ -102,8 +94,6 @@ All three screens update every 20 seconds, so a check-in on the older adult's ph
 
 </details>
 
----
-
 ## How it's built
 
 ![How a check-in flows between the screens, our server, Google Gemini and the database](docs/screenshots/architecture.png)
@@ -122,8 +112,6 @@ The voice and the summary both go through our own server, never straight from th
 | Backend | Stores patients, check-ins and alerts, and handles sign-in for the three kinds of account | Supabase (Postgres and Auth) |
 | Checks | Lint, tests and a build run on every push | Vitest, GitHub Actions |
 | Built with | AI tools we used to build quickly as a team | Lovable, Claude Code |
-
----
 
 ## Running it yourself
 
@@ -168,8 +156,6 @@ bun run test    # run the tests
 4. Back as the older adult, start a check-in and talk to Rosie, then watch the result appear on the other two screens.
 
 Some decorative background images are hosted by Lovable, the tool we built with, so they won't load in your copy. Everything else works without them.
-
----
 
 ## Team
 
