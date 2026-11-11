@@ -72,7 +72,7 @@ All three screens update every 20 seconds, so a check-in on the older adult's ph
 
 ## Screenshots
 
-**Doctor's dashboard.** Margaret is red because she missed dialysis. Clarissa is yellow because she's drinking less water than her doctor wants.
+**Doctor's dashboard.** Margaret is red because she missed dialysis. Clarissa is yellow because she's not drinking enough water.
 
 ![Doctor's dashboard: Margaret is red (missed dialysis), Clarissa is yellow (drinking too little water), with alerts below](docs/screenshots/care.png)
 
