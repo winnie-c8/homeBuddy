@@ -48,7 +48,7 @@ The doctor can also update the care plan, for example moving a medication to lun
 
 The older adult taps one big button and **Rosie**, an AI voice companion, starts a friendly conversation. She asks about sleep, meals, drinks, pain, mood, falls and medications, then the doctor's questions. If an answer is vague ("I think so"), she asks again in simpler words. Nothing needs to be typed.
 
-At the end, Rosie asks if there's anything they'd like to ask their care team, such as *"Do I have to do dialysis every single day?"*. The question goes to the doctor, and Rosie passes on the doctor's answer during the next call.
+At the end, Rosie asks if there's anything they'd like to ask their care team. The question goes to the doctor, and Rosie passes on the doctor's answer during the next call.
 
 Urgent words don't wait for the call to end. If the older adult says something like "I fell" or "my chest hurts", the app sends a red alert to the care team and family right away.
 
