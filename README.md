@@ -153,7 +153,7 @@ bun run test    # run the tests
 
 ## Team
 
-Built in 7 hours by:
+Built by:
 - **Winnie Chen** ([@winnie-c8](https://github.com/winnie-c8))
 - **Kaitlyn Chan** ([@kaitlynlaichan](https://github.com/kaitlynlaichan))
 - **Caitlin Lim** ([@clim08-source](https://github.com/clim08-source))
