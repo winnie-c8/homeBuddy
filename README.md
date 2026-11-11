@@ -151,8 +151,6 @@ bun run test    # run the tests
 3. In another private window, sign up as family and enter the code.
 4. Back as the older adult, start a check-in and talk to Rosie, then watch the result appear on the other two screens.
 
-Some decorative background images are hosted by Lovable, the tool we built with, so they won't load in your copy. Everything else works without them.
-
 ## Team
 
 Built in 7 hours by:
