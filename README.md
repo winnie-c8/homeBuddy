@@ -113,7 +113,7 @@ The diagram follows one check-in from start to finish. Before the call, the olde
 
 ## Running it yourself
 
-Our demo runs on our team's own Supabase project and Gemini API key, and neither is shared. The Gemini key was never in this repo, and the Supabase address in the code points to our project, so to run your own copy you'll connect your own.
+To run your own copy, you'll need your own Supabase project and Gemini API key. The steps below show where each one goes.
 
 **You'll need** [Bun](https://bun.sh) (a JavaScript runtime and package manager), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome for microphone access.
 
