@@ -98,9 +98,7 @@ All three screens update every 20 seconds, so a check-in on the older adult's ph
 
 ![How a check-in flows between the screens, our server, Google Gemini and the database](docs/screenshots/architecture.png)
 
-The diagram follows one check-in from start to finish. Before the call, the older adult's screen loads the doctor's questions from the database. During the call, audio streams through our server to Google's Gemini Live, which speaks as Rosie. Afterwards, our server asks a second Gemini model to turn the transcript into structured answers. The rules then set the colour and alerts, the result is saved, and the doctor's and family's screens pick it up.
-
-The voice and the summary both go through our own server, never straight from the browser to Google, so the Gemini API key always stays secret.
+The diagram follows one check-in from start to finish. Before the call, the older adult's screen loads the doctor's questions from the database. During the call, audio streams through our server to Google's Gemini Live, which speaks as Rosie. Afterwards, our server asks a second Gemini model to turn the transcript into structured answers. The rules then set the colour and alerts, the result is saved, and the doctor's and family's screens pick it up. Every request to Gemini goes through our server rather than the browser, which keeps the API key private.
 
 | Part | What it does | Built with |
 | --- | --- | --- |
