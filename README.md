@@ -90,8 +90,8 @@ All three screens update every 20 seconds, so a check-in on the older adult's ph
     <th>Family: today's status and the follow-up</th>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/senior.png" alt="Older adult's screen with a greeting, a large Start Checkup button and a 911 reminder" height="380"></td>
-    <td align="center"><img src="docs/screenshots/family.png" alt="Family view of Margaret: Needs attention, with the dialysis alert and 'The care team has been told'" height="380"></td>
+    <td align="center"><img src="docs/screenshots/senior.png" alt="Older adult's screen with a greeting, a large Start Checkup button and a 911 reminder" width="215"></td>
+    <td align="center"><img src="docs/screenshots/family.png" alt="Family view of Margaret: Needs attention, with the dialysis alert and 'The care team has been told'" width="547"></td>
   </tr>
 </table>
 
