@@ -4,99 +4,99 @@
 
 Built for the **PointClickCare Challenge** at the **Women in Engineering (WiE) Hackathon 2026**, University of Waterloo.
 
-> ⚠️ **Safety notice:** homeBuddy is a hackathon prototype. It is not a medical device and never diagnoses or gives treatment advice. The older adult's screen always says to call **911** in an emergency. All patient data shown here is fictional.
+> ⚠️ homeBuddy is a hackathon prototype, not a medical device. It never diagnoses or gives treatment advice, and the older adult's screen always says to call 911 in an emergency. All patient data shown here is fictional.
 
 ---
 
-## 💡 The problem
+## The problem
 
-Older adults living on their own often face slow-building health problems: missed meals, growing tiredness, dehydration, skipped medications. Nobody notices until they end in an emergency room visit.
+Older adults living on their own often face health problems that build slowly: missed meals, growing tiredness, dehydration, skipped medications. Nobody notices until it ends in an emergency room visit.
 
-In a nursing home, staff check on residents every day. At home, nobody does. Health portals don't fill the gap, because they expect older adults to log in, type and navigate complex screens.
+In a nursing home, staff check on residents every day. At home, nobody does, and health portals don't fill the gap because they expect older adults to log in, type and find their way around complex screens.
 
-**homeBuddy replaces the daily form and the nurse's phone call with a short, friendly voice call**, then passes what it hears to the clinician and family.
+homeBuddy replaces the daily form and the nurse's phone call with a short, friendly voice call, and passes what it hears to the care team and family.
 
 ---
 
-## 🚦 The rules: green, yellow, red
+## The rules: green, yellow, red
 
-After each daily voice check-in, the day gets a colour that tells the care team how urgently to respond. **The AI never decides the colour.** It only reports what the older adult said. Plain, tested code in [`src/lib/care.ts`](src/lib/care.ts) applies the rules, so the same answers always give the same result, and every flag can say exactly why it fired. 
+After each daily check-in call, the day gets a colour that tells the care team how quickly to respond. The AI doesn't choose the colour. It only reports what the older adult said, and a fixed set of rules decides the colour from that, so the same answers always give the same result and every flag can explain why it was raised.
 
-| Colour | Meaning | What triggers it |
+| Colour | Meaning | What causes it |
 | --- | --- | --- |
-| 🟢 **Green** | All good | Nothing flagged |
-| 🟡 **Yellow** | Watch: the clinician monitors | Missed or unconfirmed medication, low mood (2/5 or less), under 5 h sleep, fewer than 2 meals, low fluids, pain 4–6/10, or an answer the clinician marked "flag if" |
-| 🔴 **Red** | Act today: contact the patient | A fall, urgent words ("chest pain", "can't breathe", "dizzy"…), pain 7/10 or more, or **yellow that keeps happening** |
+| 🟢 Green | All good | Nothing flagged |
+| 🟡 Yellow | Keep an eye on it | A missed or unconfirmed medication, low mood (2/5 or less), under 5 hours of sleep, fewer than 2 meals, not drinking enough, pain of 4–6/10, or an answer the doctor asked to flag |
+| 🔴 Red | Contact the patient today | A fall, urgent words like "chest pain" or "can't breathe", pain of 7/10 or more, or a yellow that keeps coming back |
 
-**Yellow becomes red when it repeats.** One bad night is something to watch. Three in a row means something is changing:
-- the same built-in reason (e.g. low mood) **3 days in a row** turns red;
-- each clinician question has its own "turns red after N times in a row" setting. Setting it to 1 makes it red right away (e.g. skipping dialysis even once).
+A yellow that repeats turns red. One bad night is worth watching, but three in a row suggests something is changing. The same reason (low mood, say) three days in a row turns the day red. For their own questions, the doctor decides how many flagged answers in a row it takes. Setting it to 1 makes a single flagged answer red straight away, which suits something like a skipped dialysis session.
 
-**Who is told:**
+Here's who hears about each colour:
 
-| | Clinician | Family | Older adult |
+| | Doctor | Family | Older adult |
 | --- | --- | --- | --- |
-| 🔴 Red | Top of the dashboard, with the reason and quote | Alert with the reason, in plain words | "In an emergency, call 911" is always on screen |
-| 🟡 Yellow | Yellow badge and alert | Alert with the reason | Nothing extra |
-| 🟢 Green | Green badge | Green status | Nothing extra |
-
-Family only see an older adult's information while the older adult chooses to share it with them.
+| 🔴 Red | At the top of the dashboard, with the reason and a quote from the call | An alert explaining what happened | Always sees "In an emergency, call 911" on screen |
+| 🟡 Yellow | A yellow badge and an alert | An alert explaining what happened | Nothing extra |
+| 🟢 Green | A green badge | A green status | Nothing extra |
 
 ---
 
-## 🔁 How it's used: doctor → older adult → doctor → family
+## How it's used
+
+The day follows a loop: the doctor sets the check-in, the older adult talks, the doctor follows up, and family can see all of it.
 
 ### 1. The doctor sets up the check-in
-On a patient's page (`/care/:patientId`), the clinician writes the questions for that older adult, e.g. *"Did you do your dialysis today?"* or *"How many glasses of water today?"*. For each one, they choose:
-- **when to flag:** a yes/no answer, or a number above or below a limit;
-- **when it turns red:** after how many flagged days in a row;
-- **how often it's asked:** every day, every few days, or just once.
 
-They can also update the care plan (e.g. a new medication time), and Rosie will tell the older adult about it on the next call.
+On each patient's page, the doctor writes the questions they want asked, like *"Did you do your dialysis today?"* or *"How many glasses of water did you drink?"*. For each question they decide which answer should be flagged (a yes, a no, or a number above or below a limit), how many flagged days in a row should turn it red, and how often to ask it: every day, every few days, or just once.
 
-> **In the code:** the questions are saved to the older adult's record in Supabase. Before each call, `callContext()` in `care.ts` turns them into the list of questions to ask that day.
+The doctor can also update the care plan, for example moving a medication to lunchtime. Rosie explains the change on the next call.
 
-### 2. The older adult just talks
-The older adult opens `/senior` and taps one big button. **Rosie**, an AI voice companion, greets them and asks about sleep, meals, fluids, pain, mood, falls and medications, then the doctor's questions. If an answer is vague ("I think so"), she asks again in simpler words. No typing is needed.
+### 2. The older adult talks to Rosie
 
-> **In the code:** the browser streams microphone audio over a WebSocket to our server (`/api/live`), which relays it to **Google Gemini Live** and streams Rosie's voice back. The server adds the day's questions and keeps the Gemini API key secret.
->
-> **Urgent words don't wait for the call to end.** While the older adult talks, the app checks each sentence for words like *"chest pain"*, *"fell"* or *"can't breathe"*. If it hears one, it sends a red alert to the care team and family right away, and tells the older adult they've been alerted.
+The older adult taps one big button and **Rosie**, an AI voice companion, starts a friendly conversation. She asks about sleep, meals, drinks, pain, mood, falls and medications, then the doctor's questions. If an answer is vague ("I think so"), she asks again in simpler words. Nothing needs to be typed.
 
-### 3. The call is summarized and screened
-When the call ends, the older adult sees a simple summary of what was said. Behind the scenes, the day is marked **🟢 green**, **🟡 yellow** or **🔴 red** using [the rules](#-the-rules-green-yellow-red) above.
+At the end, Rosie asks if there's anything they'd like to ask their care team, such as *"Do I have to do dialysis every single day?"*. The question goes to the doctor, and Rosie passes on the doctor's answer during the next call.
 
-> **In the code:** a server function (`runSummary` in `checkin.functions.ts`) sends the transcript to **Gemini Flash**, which returns structured answers: for each question, the older adult's words and *yes / no / unclear*. The rules in `care.ts` then colour the day and create alerts, each with the reason and the older adult's own words.
+Urgent words don't wait for the call to end. If the older adult says something like "I fell" or "my chest hurts", the app sends a red alert to the care team and family right away.
+
+### 3. The call is summarized and coloured
+
+When the call ends, the older adult sees a simple summary of what they said. Behind the scenes, the AI turns the conversation into an answer for each question (yes, no or unclear, plus the older adult's own words), and the rules above decide the colour and who gets an alert.
 
 ### 4. The doctor follows up
-The care dashboard (`/care`) lists every patient sorted **red → yellow → green**, with open alerts at the top and how long each has waited. Red means contact the patient today, and yellow means keep an eye on it. Each alert says why, e.g. *"Mood 2/5 (low) 3 days in a row"*, with a quote from the call.
 
-Each alert moves through three stages:
-1. **New:** the care team has been told.
-2. **On it:** a clinician taps "On it", so the rest of the team (and the family) know someone is handling it.
-3. **Handled:** the clinician taps "Mark handled" and **must write a note** on what they did, e.g. *"Called Margaret, booked a dialysis appointment for Friday."* The note stays attached to that alert, with who handled it and when. Handled alerts move to a **Handled** list on the dashboard, so there's a record of every follow-up.
+The dashboard lists every patient, red first, then yellow, then green, with open alerts at the top showing how long each has been waiting. Every alert says why it was raised, for example *"Mood 2/5 (low) 3 days in a row"*, and quotes what the older adult said.
 
-The patient page also shows history charts for each question, so trends are easy to spot.
+When a doctor takes an alert, they tap **On it**, so the rest of the team and the family know someone is handling it. When it's dealt with, they tap **Mark handled** and have to write a note on what they did, such as *"Called Margaret, booked a dialysis appointment for Friday."* That note stays with the alert, along with who handled it and when, so every follow-up is on record.
+
+On each patient's page, the doctor also answers the older adult's questions and can look through charts of past answers to spot trends.
 
 ### 5. Family stay in the loop
-Family members (`/family`) see today's colour, the latest summary and any alerts, in plain words. They also see each alert's follow-up as it happens: *"The care team has been told"* → *"Dr. Lee is on it"* → *"Resolved by Dr. Lee: Called Margaret, booked a dialysis appointment for Friday."* The family view is read-only.
 
-> **In the code:** all three screens read the same record and refresh every 20 seconds, so a check-in on the older adult's phone appears on the doctor's laptop. The database's access rules, not the UI, decide who can see and change what.
+Family members see today's colour, the latest summary and any alerts in plain language. They can also follow each alert's progress, from *"The care team has been told"* to *"Dr. Lee is on it"* to *"Resolved by Dr. Lee: Called Margaret, booked a dialysis appointment for Friday."* The family view is read-only, and the older adult can stop sharing with family at any time.
+
+All three screens update every 20 seconds, so a check-in on the older adult's phone shows up on the doctor's laptop within moments.
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
-**Clinician dashboard:** patients sorted by colour, with the alerts that need a response.
+**Doctor's dashboard.** Margaret is red because she missed dialysis. Clarissa is yellow because she's drinking less water than her doctor wants.
 
-![Clinician dashboard: Margaret is red (missed dialysis), Clarissa is yellow (drinking too little water), with alerts below](docs/screenshots/care.png)
+![Doctor's dashboard: Margaret is red (missed dialysis), Clarissa is yellow (drinking too little water), with alerts below](docs/screenshots/care.png)
 
-| Older adult: one button to start the call | Family: today's status and the follow-up |
-| --- | --- |
-| <img src="docs/screenshots/senior.png" alt="Older adult's screen with a large Start Checkup button, a 911 reminder and sharing controls" width="300"> | <img src="docs/screenshots/family.png" alt="Family view of Margaret: Needs attention, with the dialysis alert and 'The care team has been told'" width="560"> |
+<table>
+  <tr>
+    <th>Older adult: one button to start the call</th>
+    <th>Family: today's status and the follow-up</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/senior.png" alt="Older adult's screen with a greeting, a large Start Checkup button and a 911 reminder" height="380"></td>
+    <td align="center"><img src="docs/screenshots/family.png" alt="Family view of Margaret: Needs attention, with the dialysis alert and 'The care team has been told'" height="380"></td>
+  </tr>
+</table>
 
 <details>
-<summary><b>Patient page</b> (clinician): question graphs, the older adult's questions, check-in rules, care plan and history</summary>
+<summary><b>Patient page</b> (click to open): answer charts, the older adult's questions for the doctor, check-in questions, care plan and history</summary>
 
 ![Margaret's patient page](docs/screenshots/care-patient.png)
 
@@ -104,52 +104,32 @@ Family members (`/family`) see today's colour, the latest summary and any alerts
 
 ---
 
-## 🏗️ Architecture
+## How it's built
 
-![How a check-in flows: the doctor saves questions, the older adult talks to Rosie through our server and Gemini, the rules colour the day, and the clinician and family screens pick it up](docs/screenshots/architecture.png)
+![How a check-in flows between the screens, our server, Google Gemini and the database](docs/screenshots/architecture.png)
 
-- **Before the call:** the doctor's questions are saved in Supabase, and the call screen loads them.
-- **During the call:** audio streams through our server to Gemini Live, and Rosie's voice streams back. Our server sits in the middle so the Gemini key never reaches the browser.
-- **After the call:** our server asks Gemini Flash to turn the transcript into structured answers. The rules in `care.ts` decide the colour and who gets an alert, and the result is saved.
-- **Follow-up:** the clinician and family screens pick it up within 20 seconds, and the clinician's follow-up is saved back to the same record.
+The diagram follows one check-in from start to finish. Before the call, the older adult's screen loads the doctor's questions from the database. During the call, audio streams through our server to Google's Gemini Live, which speaks as Rosie. Afterwards, our server asks a second Gemini model to turn the transcript into structured answers. The rules then set the colour and alerts, the result is saved, and the doctor's and family's screens pick it up.
 
-**Frontend:** designed in **Figma**, built with **TanStack Start** (React 19, TypeScript, Vite), **Tailwind CSS** and **Radix UI**. It uses the Atkinson Hyperlegible font, large text and high contrast for older eyes. Each role has its own pages under `src/routes/_authenticated/`.
+The voice and the summary both go through our own server, never straight from the browser to Google, so the Gemini API key always stays secret.
 
-**Backend:** **Supabase** stores the data and handles sign-in. Each older adult has one record, holding their questions, check-ins, alerts and care plan, read and written through `care-store.ts`. Family and clinicians link to an older adult by entering the invite code shown on the older adult's screen.
-
-**Privacy is enforced by the database itself**, using Supabase row-level security (`supabase/migrations/`). Even someone who bypasses the app's screens gets the same answer:
-
-| Who | Can see the older adult's record | Can change it |
+| Part | What it does | Built with |
 | --- | --- | --- |
-| The older adult | ✅ Always | ✅ Yes |
-| Their care team (linked by invite code) | ✅ Always | ✅ Yes: questions, care plan, alert follow-ups |
-| Family (linked by invite code) | ✅ Only while the older adult has sharing turned on for them | ❌ Never |
-| Anyone else | ❌ No | ❌ No |
-
-Each account's role (older adult, family or care team) is chosen once at signup. Users can't change it afterwards, so a family member can't make themselves a clinician.
-
-**AI:** **Google Gemini** runs the voice call and writes the summary. Both calls go through our server, so the API key stays secret. The AI only reports what was said: the colour always comes from the tested rules in `care.ts`.
-
-### Tech stack
-
-| Layer | Tools |
-| --- | --- |
-| Design | Figma |
-| Frontend | TanStack Start v1 (React 19, TypeScript, Vite), Tailwind CSS v4, Radix UI, Recharts |
-| Backend | Supabase (Postgres, row-level security, Auth), server functions and a WebSocket relay |
-| AI | Google Gemini Live (voice), Gemini Flash (structured summaries) |
-| Testing and CI | Vitest, React Testing Library, GitHub Actions |
-| Built with | Lovable, Claude Code |
+| Design | The look of all three screens, with large text, high contrast and an easy-to-read font for older eyes | Figma, Atkinson Hyperlegible |
+| Frontend | The older adult's, doctor's and family's screens | TanStack Start (React 19, TypeScript, Vite), Tailwind CSS, Radix UI, Recharts |
+| Voice call | Streams the conversation between the browser and Gemini | A WebSocket relay on our server, Google Gemini Live |
+| Call summary | Turns the transcript into an answer for each question | A server function, Google Gemini Flash |
+| Rules | Decide green, yellow or red, and who gets an alert | TypeScript, with unit tests ([`care.ts`](src/lib/care.ts)) |
+| Backend | Stores patients, check-ins and alerts, and handles sign-in for the three kinds of account | Supabase (Postgres and Auth) |
+| Checks | Lint, tests and a build run on every push | Vitest, GitHub Actions |
+| Built with | AI tools we used to build quickly as a team | Lovable, Claude Code |
 
 ---
 
-## 🚀 Running it yourself
+## Running it yourself
 
-**Bring your own backend.** Our hackathon demo ran on our team's own Supabase project and Gemini API key, and neither is shared:
-- the **Gemini key** was never in this repo (it lived only in our hosting settings);
-- the **Supabase address** in the code points to our project, so you'll swap in yours in step 2.
+Our demo runs on our team's own Supabase project and Gemini API key, and neither is shared. The Gemini key was never in this repo, and the Supabase address in the code points to our project, so to run your own copy you'll connect your own.
 
-**You'll need:** [Bun](https://bun.sh) (a JavaScript runtime and package manager), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome (for microphone access).
+**You'll need** [Bun](https://bun.sh) (a JavaScript runtime and package manager), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome for microphone access.
 
 **1. Download and install**
 ```bash
@@ -158,57 +138,40 @@ cd homeBuddy
 bun install
 ```
 
-**2. Connect your own Supabase project**
-1. **Create the tables and access rules.** In your Supabase dashboard, open the **SQL Editor** and run each file in `supabase/migrations/`, oldest first (they're named by date). If you use the [Supabase CLI](https://supabase.com/docs/guides/cli), run `supabase link` then `supabase db push` instead.
-2. **Point the app at your project.** In **Project Settings → API**, copy your **Project URL** and **publishable key**. Paste them over the two values at the top of `src/integrations/supabase/client.ts`:
+**2. Connect your Supabase project**
+1. In your Supabase dashboard, open the **SQL Editor** and run each file in `supabase/migrations/`, oldest first (they're named by date). This creates the tables and access rules. If you use the [Supabase CLI](https://supabase.com/docs/guides/cli), `supabase link` then `supabase db push` does the same.
+2. Under **Project Settings → API**, copy your **Project URL** and **publishable key**, and paste them over the two values at the top of `src/integrations/supabase/client.ts`:
    ```ts
    const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_...";
    ```
-   Update the matching values in `.env` too, so the two files agree.
-3. **Allow sign-in from your computer.** In **Authentication → URL Configuration**, set the Site URL to `http://localhost:8080`. New Supabase projects ask users to confirm their email by default. Either click the link in the email, or turn off **Confirm email** under **Authentication → Providers → Email** while testing.
+   Update the matching values in `.env` as well, so the two files agree.
+3. Under **Authentication → URL Configuration**, set the Site URL to `http://localhost:8080`. New Supabase projects ask people to confirm their email by default, so either click the link in the email or turn off **Confirm email** under **Authentication → Providers → Email** while you test.
 
-> The publishable key is designed to be public: the access rules above limit what it can do. **Never** put your Supabase *secret* (service role) key in the code.
+The publishable key is designed to be public, so it's fine in the code. Never put your Supabase *secret* key there.
 
-**3. Add your Gemini key.** The server reads it from your terminal, so it never goes into a file in the repo. Run this in the same terminal you'll start the app from:
+**3. Add your Gemini key.** The server reads it from your terminal, so it never ends up in a file. Run this in the same terminal you'll start the app from:
 ```bash
 export GEMINI_API_KEY=your-gemini-api-key
 ```
 
-**4. Run**
+**4. Run it**
 ```bash
-bun run dev     # open http://localhost:8080
-bun run test    # unit tests
-bun run build   # production build
+bun run dev     # then open http://localhost:8080
+bun run test    # run the tests
 ```
 
 **5. Try the full loop**
-1. Sign up as an **older adult** (the "I'm a senior" option) and note the invite code on your screen.
-2. In a private window, sign up as **care team** and enter the code. Add a question with a "flag if" rule.
-3. In another private window, sign up as **family** and enter the code. Sharing starts on, and the older adult can turn it off at any time.
-4. As the older adult, start a check-in and talk to Rosie. Watch the result appear on the other two screens.
+1. Sign up as an older adult (the "I'm a senior" option) and note the invite code on the screen.
+2. In a private window, sign up as care team and enter the code. Add a question with a flag rule.
+3. In another private window, sign up as family and enter the code.
+4. Back as the older adult, start a check-in and talk to Rosie, then watch the result appear on the other two screens.
 
-> Note: some decorative background images are hosted by Lovable, the tool we built with, so they won't load in your copy. The app works without them.
-
-### Project layout
-
-```
-src/
-  routes/_authenticated/  older adult (senior.tsx), care (clinician) and family pages
-  hooks/use-live-voice.ts browser side of the voice call
-  lib/
-    care.ts               green / yellow / red rules and alert routing (+ tests)
-    care-store.ts         reads and writes each older adult's record in Supabase
-    checkin.functions.ts  AI call summary (server)
-    live-relay.server.ts  voice relay to Gemini Live (server)
-    auth.ts               roles and page access
-supabase/migrations/      database tables and access rules
-docs/                     our hackathon plan (BRIEF.md) and user flows (FLOWS.md)
-```
+Some decorative background images are hosted by Lovable, the tool we built with, so they won't load in your copy. Everything else works without them.
 
 ---
 
-## 👩‍💻 Team
+## Team
 
 Built in 7 hours by:
 - **Winnie Chen** ([@winnie-c8](https://github.com/winnie-c8))
