@@ -4,153 +4,175 @@
 
 Built in one day for the **PointClickCare Challenge** at the **Women in Engineering (WiE) Hackathon 2026**, University of Waterloo.
 
-> ⚠️ **Safety notice:** homeBuddy is a hackathon prototype for monitoring and communication. It is not a medical device and never diagnoses or gives treatment advice. The senior's screen always says to call **911** in an emergency. All patient data in this project is fictional.
+> ⚠️ **Safety notice:** homeBuddy is a hackathon prototype. It is not a medical device and never diagnoses or gives treatment advice. The senior's screen always says to call **911** in an emergency. All patient data shown here is fictional.
 
-<!-- Screenshots: add the image files to docs/screenshots/ and remove this comment's markers.
-| Senior | Clinician | Family |
-| --- | --- | --- |
-| ![Senior check-in screen](docs/screenshots/senior.png) | ![Clinician care dashboard](docs/screenshots/care.png) | ![Family view](docs/screenshots/family.png) |
--->
+### Screenshots
+
+**Clinician dashboard:** patients sorted by colour, with the alerts that need a response.
+
+![Clinician dashboard: Margaret is red (missed dialysis), Clarissa is yellow (drinking too little water), with alerts below](docs/screenshots/care.png)
+
+| Senior: one button to start the call | Family: today's status and the follow-up |
+| --- | --- |
+| <img src="docs/screenshots/senior.png" alt="Senior screen with a large Start Checkup button, a 911 reminder and sharing controls" width="300"> | <img src="docs/screenshots/family.png" alt="Family view of Margaret: Needs attention, with the dialysis alert and 'The care team has been told'" width="560"> |
+
+<details>
+<summary><b>Patient page</b> (clinician): question graphs, the senior's questions, check-in rules, care plan and history</summary>
+
+![Margaret's patient page](docs/screenshots/care-patient.png)
+
+</details>
 
 ---
 
 ## 💡 The problem
 
-Seniors living on their own often face slow-building health problems: missed meals, growing tiredness, dehydration, skipped medications. Nobody notices these until they end in an emergency room visit.
+Seniors living on their own often face slow-building health problems: missed meals, growing tiredness, dehydration, skipped medications. Nobody notices until they end in an emergency room visit.
 
-In a nursing home, staff check on residents every day. At home, nobody does. Existing health portals don't fill the gap, because they expect seniors to log in, type and navigate complex screens.
+In a nursing home, staff check on residents every day. At home, nobody does. Health portals don't fill the gap, because they expect seniors to log in, type and navigate complex screens.
 
-## 🌱 Our solution
+**homeBuddy replaces the daily form and the nurse's phone call with a short, friendly voice call**, then passes what it hears to the clinician and family.
 
-homeBuddy replaces the daily form and the nurse's phone call with a short, friendly voice call, and passes what it hears to the people who need to know.
+---
 
-1. **A clinician prescribes the check-in.** They write the questions for each senior (e.g. "Did you do your dialysis today?") and say which answers should raise a flag.
-2. **The senior just talks.** Rosie, an AI voice companion, calls through the app and asks those questions in a natural conversation. No typing, no menus.
-3. **The day gets a colour.** After the call, the AI turns the conversation into structured answers, and written rules mark the day **🟢 green**, **🟡 yellow** or **🔴 red**.
-4. **The clinician sees who needs attention and why.** Every flag says which rule fired and quotes the senior's own words.
-5. **Family stay in the loop.** They see the same status and know when the care team is already on it.
+## 🚦 The rules: green, yellow, red
 
-## 👥 How each person uses it
+Every check-in gets a colour. **The AI never decides the colour.** It only reports what the senior said. Plain, tested code in [`src/lib/care.ts`](src/lib/care.ts) applies the rules, so the same answers always give the same result, and every flag can say exactly why it fired.
 
-| Person | Screen | What they do |
+| Colour | Meaning | What triggers it |
 | --- | --- | --- |
-| **Senior** | `/senior` | Taps one big button to talk to Rosie. After the call, sees a simple summary of what was said. Chooses who can see their information and shares an invite code with family and the care team. |
-| **Clinician** | `/care` and `/care/:patientId` | Sees all their patients, sorted red → yellow → green, with open alerts at the top. On a patient's page: sets check-in questions and "flag if" rules, updates the care plan, views history charts, and handles alerts ("On it" → "Resolved" with a note). |
-| **Family** | `/family` | Read-only view of today's colour, the latest summary, alerts meant for family, and who on the care team is following up. Access stops as soon as the senior stops sharing. |
+| 🟢 **Green** | All good | Nothing flagged |
+| 🟡 **Yellow** | Watch: the clinician monitors | Missed or unconfirmed medication, low mood (2/5 or less), under 5 h sleep, fewer than 2 meals, low fluids, pain 4–6/10, or an answer the clinician marked "flag if" |
+| 🔴 **Red** | Act today: contact the patient | No check-in, a fall, urgent words ("chest pain", "can't breathe", "dizzy"…), pain 7/10 or more, or **yellow that keeps happening** |
 
-### Who is told about what
+**Yellow becomes red when it repeats.** One bad night is something to watch. Three in a row means something is changing:
+- the same built-in reason (e.g. low mood) **3 days in a row** turns red;
+- each clinician question has its own "turns red after N times in a row" setting. Setting it to 1 makes it red right away (e.g. skipping dialysis even once).
 
-| Colour | Example reasons | Clinician | Family | Senior |
-| --- | --- | --- | --- | --- |
-| 🔴 Red | Missed check-in, a fall, urgent words like "chest pain", pain 7/10 or higher | Alert right away | Alert right away | Screen says call 911 |
-| 🟡 Yellow | Missed medication, low mood, under 5 h sleep, eating less, an answer the clinician flagged | Yellow badge | Alert with the reason | Nothing extra |
-| 🟢 Green | Nothing flagged | Green badge | Green status | Nothing extra |
+**Who is told:**
 
-## ⚙️ How it works (technical)
+| | Clinician | Family | Senior |
+| --- | --- | --- | --- |
+| 🔴 Red | Top of the dashboard, with the reason and quote | Alert with the reason, in plain words | Screen says call 911 |
+| 🟡 Yellow | Yellow badge and alert | Alert with the reason | Nothing extra |
+| 🟢 Green | Green badge | Green status | Nothing extra |
+
+Family only see a senior's information while the senior chooses to share it with them.
+
+---
+
+## 🔁 How it's used: doctor → senior → doctor → family
+
+### 1. The doctor sets up the check-in
+On a patient's page (`/care/:patientId`), the clinician writes the questions for that senior, e.g. *"Did you do your dialysis today?"* or *"How many glasses of water today?"*. For each one, they choose:
+- **when to flag:** a yes/no answer, or a number above or below a limit;
+- **when it turns red:** after how many flagged days in a row;
+- **how often:** every day, every few days, or just once.
+
+They can also update the care plan (e.g. a new medication time), and Rosie will tell the senior about it on the next call.
+
+> **In the code:** the questions are saved to the senior's record in Supabase. Before each call, `callContext()` in `care.ts` turns them into the list of things to ask today.
+
+### 2. The senior just talks
+The senior opens `/senior` and taps one big button. **Rosie**, an AI voice companion, greets them and asks about sleep, meals, fluids, pain, mood, falls and medications, then the doctor's questions. If an answer is vague ("I think so"), she asks again in simpler words. No typing is needed.
+
+> **In the code:** the browser streams microphone audio over a WebSocket to our server (`/api/live`), which relays it to **Google Gemini Live** and streams Rosie's voice back. The server adds the day's questions and keeps the Gemini API key secret. If the senior says an urgent word mid-call, a red alert is raised straight away.
+
+### 3. The call is summarized and screened
+When the call ends, the senior sees a simple summary of what was said.
+
+> **In the code:** a server function (`runSummary` in `checkin.functions.ts`) sends the transcript to **Gemini Flash**, which returns structured answers: for each question, the senior's words and *yes / no / unclear*. The rules in `care.ts` then colour the day and create alerts, each with the reason and the senior's own words.
+
+### 4. The doctor follows up
+The care dashboard (`/care`) lists every patient sorted **red → yellow → green**, with open alerts at the top and how long each has waited. Red means contact the patient today, and yellow means keep an eye on it. Each alert says why, e.g. *"Mood 2/5 (low) 3 days in a row"*, with a quote from the call.
+
+The clinician marks an alert **"On it"**, then **"Resolved"**. An alert can't be closed without a note on what they did (e.g. *"Called Margaret, booked a visit for Friday"*). The patient page also shows history charts, so trends are easy to see.
+
+### 5. Family stay in the loop
+Family members (`/family`) see today's colour, the latest summary and any alerts, in plain words. They also see the follow-up: *"The care team has been told"* → *"Dr. Lee is on it"* → *"Resolved: …"*. The family view is read-only.
+
+> **In the code:** all three screens read the same record and refresh every 20 seconds, so a check-in on the senior's phone appears on the doctor's laptop. The database's access rules, not the UI, decide who can see and change what.
+
+---
+
+## 🏗️ Architecture
 
 ```
- Senior's browser                 App server                     External services
- ────────────────                 ──────────                     ─────────────────
- Microphone audio  ──WebSocket──▶  /api/live relay  ──WebSocket──▶  Gemini Live (voice)
- Rosie's voice     ◀─────────────                    ◀────────────
-                                    (adds the senior's questions
-                                     and keeps the API key secret)
-
- Call transcript   ──────────────▶  summarizeCheckIn ────────────▶  Gemini Flash (summary)
-                                    returns structured answers
-
- Rules in care.ts colour the day (green / yellow / red) and create alerts
-        │
-        ▼
- Supabase (Postgres) ◀── row-level security decides who can read and write each record
-        │
-        ▼
- Clinician and family pages read the same record and refresh every 20 seconds
+ Senior's browser                 Our server                      Google Gemini
+ ────────────────                 ──────────                      ─────────────
+ Microphone  ───WebSocket──▶  /api/live relay  ───WebSocket──▶  Gemini Live (voice)
+ Rosie's voice ◀────────────                   ◀──────────────
+ Transcript  ──────────────▶  runSummary       ──────────────▶  Gemini Flash (summary)
+                                    │
+                         care.ts rules: green / yellow / red + alerts
+                                    │
+                                    ▼
+                     Supabase (Postgres + Auth, row-level security)
+                                    │
+                     Clinician and family screens (refresh every 20 s)
 ```
 
-### Frontend
-- **TanStack Start** (React 19 + TypeScript, built with Vite) with file-based routes in `src/routes/`. Each role has its own pages under `src/routes/_authenticated/`, and `requireRole` (`src/lib/auth.ts`) keeps people on the pages for their role.
-- **Tailwind CSS v4** and **Radix UI** components, with the **Atkinson Hyperlegible** font, large text and high contrast for older eyes.
-- **Recharts** for the clinician's history charts.
-- The voice call is handled in `src/hooks/use-live-voice.ts`: it streams microphone audio to the server and plays Rosie's replies back.
+**Frontend**: designed in **Figma**, built with **TanStack Start** (React 19, TypeScript, Vite), **Tailwind CSS** and **Radix UI**. It uses the Atkinson Hyperlegible font, large text and high contrast for older eyes. Each role has its own pages under `src/routes/_authenticated/`.
 
-### Backend
-- **Voice relay** (`src/lib/live-relay.server.ts`): a WebSocket at `/api/live` that sits between the browser and Google's Gemini Live API. It adds the senior's questions for the day, and it keeps the Gemini API key on the server so it never reaches the browser.
-- **Call summary** (`src/lib/checkin.functions.ts`): after the call, a server function sends the transcript to Gemini Flash. Gemini returns structured answers (for each question: what the senior said, and yes / no / unclear). The AI only reports; it doesn't decide the colour.
-- **Safety rules** (`src/lib/care.ts`, tested in `care.test.ts`): plain, deterministic code that turns the answers into green / yellow / red and decides who is alerted. All the rules live in this one file so they're easy to check and test.
-- **Database and sign-in** (Supabase): Postgres plus Supabase Auth. Each senior has one record (`patients.state`), read and written through `src/lib/care-store.ts`. Family and clinicians link to a senior with an invite code (`join_patient`).
-- **Access rules** (`supabase/migrations/`): row-level security enforces who sees what *in the database itself*, not just in the UI. Family only see a senior while the senior shares with them, family can never edit, and roles are set once at signup and can't be changed by the user.
+**Backend**: **Supabase** for the database and sign-in. Each senior has one record, read and written through `care-store.ts`. Family and clinicians join a senior with an invite code. Row-level security in `supabase/migrations/` enforces privacy in the database itself:
+- family only see a senior while the senior shares with them, and can never edit;
+- only the senior and their care team can change the record;
+- roles (senior, family, care team) are set once at signup and can't be changed by the user.
 
-### Design choices
-- **The AI listens; the rules decide.** Gemini extracts answers, but every flag comes from written, tested rules, so each one can say exactly why it fired.
-- **One record per senior** keeps the app simple while the database still enforces privacy.
-- **Not a medical device.** Rosie asks, listens and passes things on. The clinician decides what to do.
+**AI**: **Google Gemini** for the voice call and the summary. Both calls run on the server, so the API key never reaches the browser.
 
-## 🛠️ Tech stack
+**Quality**: the rules are covered by unit tests ([`care.test.ts`](src/lib/care.test.ts)), and GitHub Actions runs lint, tests and a build on every push.
+
+### Tech stack
 
 | Layer | Tools |
 | --- | --- |
-| Framework | TanStack Start v1 (React 19, TypeScript, Vite) |
-| Styling | Tailwind CSS v4, Radix UI, Atkinson Hyperlegible |
-| Live voice | Google Gemini Live (native audio) via a server WebSocket relay |
-| Check-in analysis | Google Gemini Flash (structured output) |
-| Database and auth | Supabase (Postgres, row-level security, Auth) |
-| Charts | Recharts |
-| Testing | Vitest, React Testing Library |
-| CI | GitHub Actions (lint, tests and build on every push) |
-| Built with | Lovable, Claude Code, Figma |
+| Design | Figma |
+| Frontend | TanStack Start v1 (React 19, TypeScript, Vite), Tailwind CSS v4, Radix UI, Recharts |
+| Backend | Supabase (Postgres, row-level security, Auth), server functions and a WebSocket relay |
+| AI | Google Gemini Live (voice), Gemini Flash (structured summaries) |
+| Testing and CI | Vitest, React Testing Library, GitHub Actions |
+| Built with | Lovable, Claude Code |
+
+---
 
 ## 🚀 Running it yourself
 
 You'll need your **own** Supabase project and Gemini API key. This repo doesn't include working credentials for either.
 
-### Prerequisites
-- [Bun](https://bun.sh), a JavaScript runtime and package manager (like Node.js + npm)
-- A free [Supabase](https://supabase.com) project
-- A [Google Gemini API key](https://aistudio.google.com/app/apikey)
-- Chrome (or another browser with microphone access)
+**Prerequisites:** [Bun](https://bun.sh) (a JavaScript runtime and package manager, like Node.js + npm), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome for microphone access.
 
-### 1. Install
-
+**1. Install**
 ```bash
 git clone https://github.com/winnie-c8/homeBuddy.git
 cd homeBuddy
 bun install
 ```
 
-### 2. Set up your Supabase project
-1. Create a new project at [supabase.com](https://supabase.com).
-2. Create the tables and access rules by running the SQL files in `supabase/migrations/`, in filename order. You can paste each one into the Supabase **SQL Editor**, or use the [Supabase CLI](https://supabase.com/docs/guides/cli): `supabase link` then `supabase db push`.
-3. In **Project Settings → API**, copy your **Project URL** and **publishable key**.
-4. Point the app at your project:
-   - In `src/integrations/supabase/client.ts`, replace `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` with your values.
-   - In `.env`, replace the `SUPABASE_*` and `VITE_SUPABASE_*` values with yours.
+**2. Connect your Supabase project**
+1. Create the tables and access rules by running the SQL files in `supabase/migrations/` in filename order. Paste each one into the Supabase **SQL Editor**, or use the [Supabase CLI](https://supabase.com/docs/guides/cli): `supabase link` then `supabase db push`.
+2. From **Project Settings → API**, copy your **Project URL** and **publishable key** into `src/integrations/supabase/client.ts` and `.env`, replacing the existing values.
 
-The publishable key is meant to be public: what it can do is limited by the access rules. **Never** put your Supabase *secret* (service role) key in the code.
+The publishable key is meant to be public, because the access rules limit what it can do. **Never** put the Supabase *secret* (service role) key in the code.
 
-### 3. Add your Gemini key
-The Gemini key must stay on the server. Set it in your terminal before starting the app (don't commit it):
-
+**3. Add your Gemini key**: keep it on the server and out of git.
 ```bash
 export GEMINI_API_KEY=your-gemini-api-key
 ```
 
-### 4. Run
-
+**4. Run**
 ```bash
-bun run dev     # start the app at http://localhost:8080
-bun run test    # run the tests
+bun run dev     # http://localhost:8080
+bun run test    # unit tests
 bun run build   # production build
 ```
+Create three accounts (senior, family, care team). Copy the invite code from the senior's screen and enter it in the other two accounts to link them.
 
-Create three accounts (senior, family, care team). As the senior, copy the invite code from the senior screen, then enter it from the family and care team accounts to link them.
-
-## 📁 Project layout
+### Project layout
 
 ```
 src/
-  routes/                 pages (file-based routing)
-    _authenticated/       signed-in pages: senior, care (clinician), family
+  routes/_authenticated/  senior, care (clinician) and family pages
   hooks/use-live-voice.ts browser side of the voice call
   lib/
     care.ts               green / yellow / red rules and alert routing (+ tests)
@@ -158,12 +180,11 @@ src/
     checkin.functions.ts  AI call summary (server)
     live-relay.server.ts  voice relay to Gemini Live (server)
     auth.ts               roles and page access
-  components/             UI components
 supabase/migrations/      database tables and access rules
-docs/                     hackathon brief and user flows
+docs/                     our hackathon plan (BRIEF.md) and user flows (FLOWS.md)
 ```
 
-`docs/BRIEF.md` is the plan we built from on the day, and `docs/FLOWS.md` describes each user's flow and the edge cases.
+---
 
 ## 👩‍💻 Team
 
