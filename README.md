@@ -113,9 +113,7 @@ The diagram follows one check-in from start to finish. Before the call, the olde
 
 ## Running it yourself
 
-To run your own copy, you'll need your own Supabase project and Gemini API key. The steps below show where each one goes.
-
-**You'll need** [Bun](https://bun.sh) (a JavaScript runtime and package manager), a free [Supabase](https://supabase.com) project, a [Gemini API key](https://aistudio.google.com/app/apikey), and Chrome for microphone access.
+To run your own copy, you'll need [Bun](https://bun.sh) installed, a free [Supabase](https://supabase.com) project and a [Gemini API key](https://aistudio.google.com/app/apikey). Use Chrome so Rosie can hear you through the microphone. The steps below show where everything goes.
 
 **1. Download and install**
 ```bash
