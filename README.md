@@ -1,5 +1,7 @@
 # homeBuddy 🏡
 
+🥉 3rd Place Overall, UW Women In Engineering Hackathon 2026
+
 **Bringing the reassurance of a nursing home's daily check-in to older adults aging at home.**
 
 Built for the **PointClickCare Challenge** at the **Women in Engineering (WiE) Hackathon 2026**, University of Waterloo.
